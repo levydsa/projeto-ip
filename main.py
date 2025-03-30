@@ -11,6 +11,8 @@ FRAME_THICKNESS = 5
 GHOST_BASE_SIZE = 190
 
 FLASH_FADE_SPEED = 500
+
+
 class Vector2(pygame.Vector2):
     def multiply_componentwise(self, other: pygame.Vector2) -> pygame.Vector2:
         return Vector2(self.x * other.x, self.y * other.y)

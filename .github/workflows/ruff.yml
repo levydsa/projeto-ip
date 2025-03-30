@@ -1,6 +1,8 @@
 name: Ruff
 
 on:
+  push:
+    branches: [ main ]
   pull_request:
     branches: [ main ]
 
@@ -9,21 +11,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: astral-sh/ruff-action@v3
         with:
-          python-version: '3.12'
-          
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install ruff
-          
-      - name: Check with Ruff (linting and typing)
-        run: |
-          ruff check .
-          
-      - name: Check formatting with Ruff
-        run: |
-          ruff format --check .
+          args: "format --check --diff"

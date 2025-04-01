@@ -61,14 +61,18 @@ class Player:
 
 
 class Ghost:
+    type: int
     base_size: float
     logical_position: Vector2
 
     hitbox: pygame.Rect
     velocity: Vector2
+    hp: int
     _distance: float
 
-    def __init__(self, position: Vector2, distance: float = 1.0):
+    def __init__(self, position: Vector2, distance: float = 1.0, type: int = 0):
+        self.hp = 10
+        self.type = type
         self.logical_position = position
 
         size = GHOST_BASE_SIZE / (distance**2)
@@ -111,9 +115,18 @@ class Ghost:
         self.hitbox.topleft = self.logical_position + offset * self.parallax_factor
 
     def draw(self, screen: pygame.Surface) -> None:
+        base = pygame.Color([255 / self.distance**2] * 3)
+
+        if self.type == 0:
+            color = pygame.Color("red")
+        elif self.type == 1:
+            color = pygame.Color("green")
+        elif self.type == 2:
+            color = pygame.Color("blue")
+
         pygame.draw.rect(
             screen,
-            pygame.Color([255 / self.distance**2] * 3),
+            color * base,
             self.hitbox,
         )
 
@@ -181,6 +194,7 @@ class Game:
                         random.uniform(0, self.screen.get_height()),
                     ),
                     distance=random.uniform(1.0, 3.0),
+                    type=random.randint(0, 2),
                 )
             )
 
@@ -221,11 +235,16 @@ class Game:
         self.frame.has_target = frame_has_target
 
         if self.clicked:
-            self.ghosts = [
-                ghost
-                for ghost in self.ghosts
-                if not self.frame.rect.contains(ghost.hitbox)
-            ]
+            new_ghosts = []
+
+            for ghost in self.ghosts:
+                if self.frame.rect.contains(ghost.hitbox):
+                    ghost.hp -= 1
+                if ghost.hp > 0:
+                    new_ghosts.append(ghost)
+
+            self.ghosts = new_ghosts
+
             self.clicked = False
 
         for ghost in self.ghosts:

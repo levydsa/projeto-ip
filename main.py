@@ -173,9 +173,12 @@ class Game:
     running: bool
     clicked: bool
     font: pygame.font.Font
+    points: int
 
     def __init__(self):
         pygame.init()
+
+        self.points = 0
 
         self.screen = pygame.display.set_mode((800, 600))
         pygame.display.set_caption("Projeto IP")
@@ -207,6 +210,12 @@ class Game:
         self.clicked = False
         self.font = pygame.font.SysFont("sans", 14)
 
+    def exibe_pontos(self, msg, tamanho, cor):
+        font = pygame.font.SysFont('comicsanssms', tamanho, True, False)
+        mensagem = f'{msg}'
+        texto_formatado = font.render(mensagem, True, cor)
+        return texto_formatado
+
     def handle_events(self) -> None:
         for event in pygame.event.get():
             match event.type:
@@ -235,6 +244,7 @@ class Game:
         self.frame.has_target = frame_has_target
 
         if self.clicked:
+            self.points += 1
             new_ghosts = []
 
             for ghost in self.ghosts:
@@ -246,6 +256,8 @@ class Game:
             self.ghosts = new_ghosts
 
             self.clicked = False
+        else:
+            texto_pontos = self.exibe_pontos(self.points, 40, (0, 255, 0))
 
         for ghost in self.ghosts:
             ghost.update(dt, offset)
@@ -266,6 +278,9 @@ class Game:
         self.player.draw(self.screen)
         self.frame.draw(self.screen)
         self.flash.draw(self.screen)
+
+        texto_pontos = self.exibe_pontos(self.points, 40, (0, 255, 0))
+        self.screen.blit(texto_pontos, (self.screen.get_width() - 100, 10))
 
         text = self.font.render(
             f"""

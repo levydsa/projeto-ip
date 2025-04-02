@@ -15,7 +15,7 @@ FLASH_FADE_SPEED = 500
 
 class Vector2(pygame.Vector2):
     def multiply_componentwise(self, other: pygame.Vector2) -> pygame.Vector2:
-        return Vector2(100 * other.x, self.y * other.y)
+        return Vector2(self.x * other.x, self.y * other.y)
 
 
 class FlashEffect:
@@ -71,9 +71,15 @@ class Ghost:
     _distance: float
 
     def __init__(self, position: Vector2, distance: float = 1.0, type: int = 0):
-        self.hp = 10
         self.type = type
         self.logical_position = position
+
+        if self.type == 0:
+            self.hp = 10
+        elif self.type == 1:
+            self.hp = 15
+        elif self.type == 2:
+            self.hp = 20
 
         size = GHOST_BASE_SIZE / (distance**2)
         self.hitbox = pygame.Rect(
@@ -118,10 +124,13 @@ class Ghost:
         base = pygame.Color([255 / self.distance**2] * 3)
 
         if self.type == 0:
+            self.hp = 10
             color = pygame.Color("red")
         elif self.type == 1:
+            self.hp = 15
             color = pygame.Color("green")
         elif self.type == 2:
+            self.hp = 20
             color = pygame.Color("blue")
 
         pygame.draw.rect(

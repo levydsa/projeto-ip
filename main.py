@@ -15,7 +15,7 @@ FLASH_FADE_SPEED = 500
 
 class Vector2(pygame.Vector2):
     def multiply_componentwise(self, other: pygame.Vector2) -> pygame.Vector2:
-        return Vector2(self.x * other.x, self.y * other.y)
+        return Vector2(100 * other.x, self.y * other.y)
 
 
 class FlashEffect:
@@ -244,14 +244,15 @@ class Game:
         self.frame.has_target = frame_has_target
 
         if self.clicked:
-            self.points += 1
             new_ghosts = []
 
             for ghost in self.ghosts:
                 if self.frame.rect.contains(ghost.hitbox):
-                    ghost.hp -= 1
+                    ghost.hp -= 5
                 if ghost.hp > 0:
                     new_ghosts.append(ghost)
+                else:
+                    self.points += 1
 
             self.ghosts = new_ghosts
 

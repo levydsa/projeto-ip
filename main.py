@@ -60,8 +60,8 @@ class Player:
         pygame.draw.circle(screen, self.color, self.position, PLAYER_RADIUS)
 
 
-class Ghost:
-    type: int
+class Ghost(pygame.sprite.Sprite):
+    buff: int
     base_size: float
     logical_position: Vector2
 
@@ -69,11 +69,19 @@ class Ghost:
     velocity: Vector2
     hp: int
     _distance: float
-
-    def __init__(self, position: Vector2, distance: float = 1.0, type: int = 0):
+    
+    def __init__(self, position: Vector2, distance: float = 1.0, buff: int = 0):
+        super().__init__()
         self.hp = 10
-        self.type = type
+        self.buff = buff
         self.logical_position = position
+        
+        if buff == 0:
+            self.base_image = pygame.image.load("assets/Ghost_Normal/Normal_Red.png").convert_alpha()
+        elif buff == 1:
+            self.base_image = pygame.image.load("assets/Ghost_Normal/Normal_Blue.png").convert_alpha()
+        elif buff == 2:
+            self.base_image = pygame.image.load("assets/Ghost_Normal/Normal_Green.png").convert_alpha()
 
         size = GHOST_BASE_SIZE / (distance**2)
         self.hitbox = pygame.Rect(
@@ -117,19 +125,15 @@ class Ghost:
     def draw(self, screen: pygame.Surface) -> None:
         base = pygame.Color([255 / self.distance**2] * 3)
 
-        if self.type == 0:
-            color = pygame.Color("red")
-        elif self.type == 1:
-            color = pygame.Color("green")
-        elif self.type == 2:
-            color = pygame.Color("blue")
-
-        pygame.draw.rect(
-            screen,
-            color * base,
-            self.hitbox,
+        size = GHOST_BASE_SIZE / (self._distance**2)
+        scale_factor = size / max(self.base_image.get_size())
+        self.image = pygame.transform.scale(
+            self.base_image,
+            (int(self.base_image.get_width() * scale_factor),
+             int(self.base_image.get_height() * scale_factor))
         )
-
+        self.rect = self.image.get_rect(center=self.logical_position)
+        screen.blit(self.image, self.hitbox.topleft)
 
 class Frame:
     rect: pygame.Rect
@@ -197,7 +201,7 @@ class Game:
                         random.uniform(0, self.screen.get_height()),
                     ),
                     distance=random.uniform(1.0, 3.0),
-                    type=random.randint(0, 2),
+                    buff=random.randint(0, 2),
                 )
             )
 

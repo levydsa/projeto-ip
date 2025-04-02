@@ -12,7 +12,6 @@ GHOST_BASE_SIZE = 190
 
 FLASH_FADE_SPEED = 500
 
-
 class Vector2(pygame.Vector2):
     def multiply_componentwise(self, other: pygame.Vector2) -> pygame.Vector2:
         return Vector2(self.x * other.x, self.y * other.y)
@@ -69,9 +68,8 @@ class Ghost(pygame.sprite.Sprite):
     velocity: Vector2
     hp: int
     _distance: float
-    
+
     def __init__(self, position: Vector2, distance: float = 1.0, buff: int = 0):
-        super().__init__()
         self.hp = 10
         self.buff = buff
         self.logical_position = position
@@ -138,6 +136,7 @@ class Ghost(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center=self.logical_position)
         screen.blit(self.image, self.hitbox.topleft)
 
+
 class Frame:
     rect: pygame.Rect
     color: pygame.Color
@@ -169,6 +168,26 @@ class Frame:
         color = FRAME_ACTIVE_COLOR if self.has_target else FRAME_DEFAULT_COLOR
         pygame.draw.rect(screen, color, self.rect, FRAME_THICKNESS)
 
+class Particula(pygame.sprite.Sprite):
+    def __init__(self, pos, groups):
+        super().__init__(groups)
+        self.image = pygame.Surface((4, 4))
+        self.rect = self.image.get_rect(topleft=pos)
+        self.color = "white"
+        self.image.fill(self.color)
+
+        self.dir_x = random.randint(-3, 3)
+        self.dir_y = random.randint(-3, 3)
+
+        if abs(self.dir_x) < 1 and abs(self.dir_y) < 1:
+            if random.choice([True, False]):
+                self.dir_x = random.choice([-3, 3])
+            else:
+                self.dir_y = random.choice([-3, 3])
+
+    def update(self):
+        self.rect.x += self.dir_x
+        self.rect.y += self.dir_y
 
 class Game:
     screen: pygame.Surface
@@ -184,13 +203,13 @@ class Game:
     points_green: int
     points_red: int 
     points_blue: int
+    particulas: pygame.sprite.Group
     def __init__(self):
         pygame.init()
 
         self.points_green = 0
         self.points_blue = 0
         self.points_red = 0
-
         self.screen = pygame.display.set_mode((800, 600))
         pygame.display.set_caption("Projeto IP")
 
@@ -198,6 +217,7 @@ class Game:
         self.flash = FlashEffect()
         self.frame = Frame(300, 200)
         self.player = Player(Vector2(400, 550), pygame.Color("blue"))
+        self.particulas = pygame.sprite.Group()
 
         self.ghosts = []
         #diminui a quantidade de fantasmas para ficar mais vísivel
@@ -264,16 +284,18 @@ class Game:
                 if ghost.hp > 0:
                     new_ghosts.append(ghost)
                 else:
-                    if ghost.buff == 0:
-                        self.points_red += 1
-                    elif ghost.buff == 1:
-                        self.points_green += 1 #fiz que os pontos so atualizem se o bicho morrer
-                    elif ghost.buff == 2:
-                        self.points_blue += 1
-
+                    for _ in range(5):
+                        Particula(ghost.hitbox.topleft, self.particulas)
+                        if ghost.buff == 0:
+                            self.points_red += 1
+                        elif ghost.buff == 1:
+                            self.points_green += 1 #fiz que os pontos so atualizem se o bicho morrer
+                        elif ghost.buff == 2:
+                            self.points_blue += 1
             self.ghosts = new_ghosts 
 
             self.clicked = False
+        self.particulas.update()
 
         for ghost in self.ghosts:
             ghost.update(dt, offset)
@@ -287,6 +309,7 @@ class Game:
 
     def draw(self) -> None:
         self.screen.fill((0, 0, 0))
+        self.particulas.draw(self.screen)
 
         for rect in self.ghosts:
             rect.draw(self.screen)

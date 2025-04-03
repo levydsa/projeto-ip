@@ -264,11 +264,11 @@ class Game:
                 if ghost.hp > 0:
                     new_ghosts.append(ghost)
                 else:
-                    if ghost.type == 0:
+                    if ghost.buff == 0:
                         self.points_red += 1
-                    elif ghost.type == 1:
+                    elif ghost.buff == 1:
                         self.points_green += 1 #fiz que os pontos so atualizem se o bicho morrer
-                    elif ghost.type == 2:
+                    elif ghost.buff == 2:
                         self.points_blue += 1
 
             self.ghosts = new_ghosts 

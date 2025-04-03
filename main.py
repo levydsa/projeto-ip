@@ -12,6 +12,7 @@ GHOST_BASE_SIZE = 190
 
 FLASH_FADE_SPEED = 500
 
+
 class Vector2(pygame.Vector2):
     def multiply_componentwise(self, other: pygame.Vector2) -> pygame.Vector2:
         return Vector2(self.x * other.x, self.y * other.y)
@@ -73,16 +74,19 @@ class Ghost(pygame.sprite.Sprite):
         self.hp = 10
         self.buff = buff
         self.logical_position = position
-        
+
         if buff == 0:
             self.hp = 10
-            self.base_image = pygame.image.load("assets/Ghost_Normal/Normal_Red.png").convert_alpha()
+            self.base_image = pygame.image.load(
+                "assets/Ghost_Normal/Normal_Red.png").convert_alpha()
         elif buff == 1:
             self.hp = 15
-            self.base_image = pygame.image.load("assets/Ghost_Normal/Normal_Blue.png").convert_alpha()
+            self.base_image = pygame.image.load(
+                "assets/Ghost_Normal/Normal_Blue.png").convert_alpha()
         elif buff == 2:
             self.hp = 20
-            self.base_image = pygame.image.load("assets/Ghost_Normal/Normal_Green.png").convert_alpha()
+            self.base_image = pygame.image.load(
+                "assets/Ghost_Normal/Normal_Green.png").convert_alpha()
 
         size = GHOST_BASE_SIZE / (distance**2)
         self.hitbox = pygame.Rect(
@@ -168,6 +172,7 @@ class Frame:
         color = FRAME_ACTIVE_COLOR if self.has_target else FRAME_DEFAULT_COLOR
         pygame.draw.rect(screen, color, self.rect, FRAME_THICKNESS)
 
+
 class Particula(pygame.sprite.Sprite):
     def __init__(self, pos, groups):
         super().__init__(groups)
@@ -189,6 +194,7 @@ class Particula(pygame.sprite.Sprite):
         self.rect.x += self.dir_x
         self.rect.y += self.dir_y
 
+
 class Game:
     screen: pygame.Surface
     clock: pygame.time.Clock
@@ -199,11 +205,12 @@ class Game:
     running: bool
     clicked: bool
     font: pygame.font.Font
-    #criei 1 variavel para cada tipo de fantasma
+    # criei 1 variavel para cada tipo de fantasma
     points_green: int
-    points_red: int 
+    points_red: int
     points_blue: int
     particulas: pygame.sprite.Group
+
     def __init__(self):
         pygame.init()
 
@@ -220,7 +227,7 @@ class Game:
         self.particulas = pygame.sprite.Group()
 
         self.ghosts = []
-        #diminui a quantidade de fantasmas para ficar mais vísivel
+        # diminui a quantidade de fantasmas para ficar mais vísivel
         for _ in range(50):
             self.ghosts.append(
                 Ghost(
@@ -280,7 +287,7 @@ class Game:
 
             for ghost in self.ghosts:
                 if self.frame.rect.contains(ghost.hitbox):
-                    ghost.hp -= 5 #mudei o dano para os bichos morrerem entre 2/4 cliques
+                    ghost.hp -= 5  # mudei o dano para os bichos morrerem entre 2/4 cliques
                 if ghost.hp > 0:
                     new_ghosts.append(ghost)
                 else:
@@ -289,10 +296,10 @@ class Game:
                         if ghost.buff == 0:
                             self.points_red += 1
                         elif ghost.buff == 1:
-                            self.points_green += 1 #fiz que os pontos so atualizem se o bicho morrer
+                            self.points_green += 1  # fiz que os pontos so atualizem se o bicho morrer
                         elif ghost.buff == 2:
                             self.points_blue += 1
-            self.ghosts = new_ghosts 
+            self.ghosts = new_ghosts
 
             self.clicked = False
         self.particulas.update()
@@ -317,13 +324,16 @@ class Game:
         self.player.draw(self.screen)
         self.frame.draw(self.screen)
         self.flash.draw(self.screen)
-        
-        #uma variavel para o os pontos de cada um
 
-        texto_pontos_green = self.exibe_pontos(self.points_green, 40, (0, 255, 0))
-        texto_pontos_blue = self.exibe_pontos(self.points_blue, 40, (0, 0, 255))
+        # uma variavel para o os pontos de cada um
+
+        texto_pontos_green = self.exibe_pontos(
+            self.points_green, 40, (0, 255, 0))
+        texto_pontos_blue = self.exibe_pontos(
+            self.points_blue, 40, (0, 0, 255))
         texto_pontos_red = self.exibe_pontos(self.points_red, 40, (255, 0, 0))
-        self.screen.blit(texto_pontos_green, (self.screen.get_width() - 100, 10))
+        self.screen.blit(texto_pontos_green,
+                         (self.screen.get_width() - 100, 10))
         self.screen.blit(texto_pontos_blue, (self.screen.get_width() - 65, 10))
         self.screen.blit(texto_pontos_red, (self.screen.get_width() - 30, 10))
 

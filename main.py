@@ -77,10 +77,13 @@ class Ghost(pygame.sprite.Sprite):
         self.logical_position = position
         
         if buff == 0:
+            self.hp = 10
             self.base_image = pygame.image.load("assets/Ghost_Normal/Normal_Red.png").convert_alpha()
         elif buff == 1:
+            self.hp = 15
             self.base_image = pygame.image.load("assets/Ghost_Normal/Normal_Blue.png").convert_alpha()
         elif buff == 2:
+            self.hp = 20
             self.base_image = pygame.image.load("assets/Ghost_Normal/Normal_Green.png").convert_alpha()
 
         size = GHOST_BASE_SIZE / (distance**2)
@@ -177,12 +180,16 @@ class Game:
     running: bool
     clicked: bool
     font: pygame.font.Font
-    points: int
-
+    #criei 1 variavel para cada tipo de fantasma
+    points_green: int
+    points_red: int 
+    points_blue: int
     def __init__(self):
         pygame.init()
 
-        self.points = 0
+        self.points_green = 0
+        self.points_blue = 0
+        self.points_red = 0
 
         self.screen = pygame.display.set_mode((800, 600))
         pygame.display.set_caption("Projeto IP")
@@ -193,7 +200,8 @@ class Game:
         self.player = Player(Vector2(400, 550), pygame.Color("blue"))
 
         self.ghosts = []
-        for _ in range(100):
+        #diminui a quantidade de fantasmas para ficar mais vísivel
+        for _ in range(50):
             self.ghosts.append(
                 Ghost(
                     position=Vector2(
@@ -248,20 +256,24 @@ class Game:
         self.frame.has_target = frame_has_target
 
         if self.clicked:
-            self.points += 1
             new_ghosts = []
 
             for ghost in self.ghosts:
                 if self.frame.rect.contains(ghost.hitbox):
-                    ghost.hp -= 1
+                    ghost.hp -= 5 #mudei o dano para os bichos morrerem entre 2/4 cliques
                 if ghost.hp > 0:
                     new_ghosts.append(ghost)
+                else:
+                    if ghost.type == 0:
+                        self.points_red += 1
+                    elif ghost.type == 1:
+                        self.points_green += 1 #fiz que os pontos so atualizem se o bicho morrer
+                    elif ghost.type == 2:
+                        self.points_blue += 1
 
-            self.ghosts = new_ghosts
+            self.ghosts = new_ghosts 
 
             self.clicked = False
-        else:
-            texto_pontos = self.exibe_pontos(self.points, 40, (0, 255, 0))
 
         for ghost in self.ghosts:
             ghost.update(dt, offset)
@@ -282,9 +294,15 @@ class Game:
         self.player.draw(self.screen)
         self.frame.draw(self.screen)
         self.flash.draw(self.screen)
+        
+        #uma variavel para o os pontos de cada um
 
-        texto_pontos = self.exibe_pontos(self.points, 40, (0, 255, 0))
-        self.screen.blit(texto_pontos, (self.screen.get_width() - 100, 10))
+        texto_pontos_green = self.exibe_pontos(self.points_green, 40, (0, 255, 0))
+        texto_pontos_blue = self.exibe_pontos(self.points_blue, 40, (0, 0, 255))
+        texto_pontos_red = self.exibe_pontos(self.points_red, 40, (255, 0, 0))
+        self.screen.blit(texto_pontos_green, (self.screen.get_width() - 100, 10))
+        self.screen.blit(texto_pontos_blue, (self.screen.get_width() - 65, 10))
+        self.screen.blit(texto_pontos_red, (self.screen.get_width() - 30, 10))
 
         text = self.font.render(
             f"""

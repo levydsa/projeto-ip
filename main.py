@@ -60,7 +60,8 @@ class Player:
         pygame.draw.circle(screen, self.color, self.position, PLAYER_RADIUS)
 
 
-class Ghost(pygame.sprite.Sprite):
+class Ghost:
+    type = int
     buff: int
     base_size: float
     logical_position: Vector2
@@ -70,18 +71,42 @@ class Ghost(pygame.sprite.Sprite):
     hp: int
     _distance: float
     
-    def __init__(self, position: Vector2, distance: float = 1.0, buff: int = 0):
+    def __init__(self, position: Vector2, distance: float = 1.0, buff: int = 0, type: int = 0):
         super().__init__()
         self.hp = 10
         self.buff = buff
         self.logical_position = position
         
-        if buff == 0:
-            self.base_image = pygame.image.load("assets/Ghost_Normal/Normal_Red.png").convert_alpha()
-        elif buff == 1:
-            self.base_image = pygame.image.load("assets/Ghost_Normal/Normal_Blue.png").convert_alpha()
-        elif buff == 2:
-            self.base_image = pygame.image.load("assets/Ghost_Normal/Normal_Green.png").convert_alpha()
+        if type == 0: #Normal
+            if buff == 0:
+                self.hp = 10
+                self.base_image = pygame.image.load("assets/Ghost_Normal/Normal_Red.png").convert_alpha()
+            elif buff == 1:
+                self.hp = 15
+                self.base_image = pygame.image.load("assets/Ghost_Normal/Normal_Blue.png").convert_alpha()
+            elif buff == 2:
+                self.hp = 20
+                self.base_image = pygame.image.load("assets/Ghost_Normal/Normal_Green.png").convert_alpha()
+        if type == 1: #Goat
+            if buff == 0:
+                self.hp = 10
+                self.base_image = pygame.image.load("assets/Ghost_Goat/Goat_Red.png").convert_alpha()
+            elif buff == 1:
+                self.hp = 15
+                self.base_image = pygame.image.load("assets/Ghost_Goat/Goat_Blue.png").convert_alpha()
+            elif buff == 2:
+                self.hp = 20
+                self.base_image = pygame.image.load("assets/Ghost_Goat/Goat_Green.png").convert_alpha()
+        if type == 2: #Eye
+            if buff == 0:
+                self.hp = 10
+                self.base_image = pygame.image.load("assets/Ghost_Eye/Eye_Red.png").convert_alpha()
+            elif buff == 1:
+                self.hp = 15
+                self.base_image = pygame.image.load("assets/Ghost_Eye/Eye_Blue.png").convert_alpha()
+            elif buff == 2:
+                self.hp = 20
+                self.base_image = pygame.image.load("assets/Ghost_Eye/Eye_Green.png").convert_alpha()
 
         size = GHOST_BASE_SIZE / (distance**2)
         self.hitbox = pygame.Rect(
@@ -167,6 +192,28 @@ class Frame:
         pygame.draw.rect(screen, color, self.rect, FRAME_THICKNESS)
 
 
+class Particula(pygame.sprite.Sprite):
+    def __init__(self, pos, groups):
+        super().__init__(groups)
+        self.image = pygame.Surface((4, 4))
+        self.rect = self.image.get_rect(topleft=pos)
+        self.color = "white"
+        self.image.fill(self.color)
+
+        self.dir_x = random.randint(-3, 3)
+        self.dir_y = random.randint(-3, 3)
+
+        if abs(self.dir_x) < 1 and abs(self.dir_y) < 1:
+            if random.choice([True, False]):
+                self.dir_x = random.choice([-3, 3])
+            else:
+                self.dir_y = random.choice([-3, 3])
+
+    def update(self):
+        self.rect.x += self.dir_x
+        self.rect.y += self.dir_y
+
+
 class Game:
     screen: pygame.Surface
     clock: pygame.time.Clock
@@ -177,13 +224,18 @@ class Game:
     running: bool
     clicked: bool
     font: pygame.font.Font
-    points: int
+    # criei 1 variavel para cada tipo de fantasma
+    points_green: int
+    points_red: int
+    points_blue: int
+    particulas: pygame.sprite.Group
 
     def __init__(self):
         pygame.init()
 
-        self.points = 0
-
+        self.points_green = 0
+        self.points_blue = 0
+        self.points_red = 0
         self.screen = pygame.display.set_mode((800, 600))
         pygame.display.set_caption("Projeto IP")
 
@@ -191,9 +243,11 @@ class Game:
         self.flash = FlashEffect()
         self.frame = Frame(300, 200)
         self.player = Player(Vector2(400, 550), pygame.Color("blue"))
+        self.particulas = pygame.sprite.Group()
 
         self.ghosts = []
-        for _ in range(100):
+        # diminui a quantidade de fantasmas para ficar mais vísivel
+        for _ in range(50):
             self.ghosts.append(
                 Ghost(
                     position=Vector2(
@@ -202,6 +256,7 @@ class Game:
                     ),
                     distance=random.uniform(1.0, 3.0),
                     buff=random.randint(0, 2),
+                    type=random.randint(0,2)
                 )
             )
 
@@ -248,20 +303,26 @@ class Game:
         self.frame.has_target = frame_has_target
 
         if self.clicked:
-            self.points += 1
             new_ghosts = []
 
             for ghost in self.ghosts:
                 if self.frame.rect.contains(ghost.hitbox):
-                    ghost.hp -= 1
+                    ghost.hp -= 5  # mudei o dano para os bichos morrerem entre 2/4 cliques
                 if ghost.hp > 0:
                     new_ghosts.append(ghost)
-
+                else:
+                    for _ in range(5):
+                        Particula(ghost.hitbox.topleft, self.particulas)
+                        if ghost.buff == 0:
+                            self.points_red += 1
+                        elif ghost.buff == 1:
+                            self.points_green += 1  # fiz que os pontos so atualizem se o bicho morrer
+                        elif ghost.buff == 2:
+                            self.points_blue += 1
             self.ghosts = new_ghosts
 
             self.clicked = False
-        else:
-            texto_pontos = self.exibe_pontos(self.points, 40, (0, 255, 0))
+        self.particulas.update()
 
         for ghost in self.ghosts:
             ghost.update(dt, offset)
@@ -275,6 +336,7 @@ class Game:
 
     def draw(self) -> None:
         self.screen.fill((0, 0, 0))
+        self.particulas.draw(self.screen)
 
         for rect in self.ghosts:
             rect.draw(self.screen)
@@ -283,8 +345,17 @@ class Game:
         self.frame.draw(self.screen)
         self.flash.draw(self.screen)
 
-        texto_pontos = self.exibe_pontos(self.points, 40, (0, 255, 0))
-        self.screen.blit(texto_pontos, (self.screen.get_width() - 100, 10))
+        # uma variavel para o os pontos de cada um
+
+        texto_pontos_green = self.exibe_pontos(
+            self.points_green, 40, (0, 255, 0))
+        texto_pontos_blue = self.exibe_pontos(
+            self.points_blue, 40, (0, 0, 255))
+        texto_pontos_red = self.exibe_pontos(self.points_red, 40, (255, 0, 0))
+        self.screen.blit(texto_pontos_green,
+                         (self.screen.get_width() - 100, 10))
+        self.screen.blit(texto_pontos_blue, (self.screen.get_width() - 65, 10))
+        self.screen.blit(texto_pontos_red, (self.screen.get_width() - 30, 10))
 
         text = self.font.render(
             f"""

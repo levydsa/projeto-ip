@@ -204,7 +204,7 @@ class Game:
     flash: FlashEffect
     running: bool
     clicked: bool
-    font: pygame.font.Font
+    font: pygame.font.Font  
     # criei 1 variavel para cada tipo de fantasma
     points_green: int
     points_red: int
@@ -213,6 +213,14 @@ class Game:
 
     def __init__(self):
         pygame.init()
+        pygame.mixer.init()
+        self.sons = {
+            'menu': pygame.mixer.Sound('sons/menu.mp3'), #provavelmente devia estar no outro arquivo
+            'flash' : pygame.mixer.Sound('sons/flash.wav'),
+            'estatua_morre' : pygame.mixer.Sound('sons/morteestatua.wav')
+        }
+        for sound in self.sons.values():
+            sound.set_volume(0.1)
 
         self.points_green = 0
         self.points_blue = 0
@@ -263,6 +271,7 @@ class Game:
                 case pygame.MOUSEBUTTONDOWN:
                     if event.button == pygame.BUTTON_LEFT:
                         self.clicked = True
+                        self.sons['flash'].play()
                         self.flash.trigger()
 
     def update(self, dt: float) -> None:
@@ -291,6 +300,7 @@ class Game:
                 if ghost.hp > 0:
                     new_ghosts.append(ghost)
                 else:
+                    self.sons['estatua_morre'].play() #por enquanto todo fantasma vai ter o mesmo som ja q so tem um sprite
                     for _ in range(5):
                         Particula(ghost.hitbox.topleft, self.particulas)
                         if ghost.buff == 0:

@@ -71,7 +71,8 @@ class Player:
         pygame.draw.circle(screen, self.color, self.position, PLAYER_RADIUS)
 
 
-class Ghost(pygame.sprite.Sprite):
+class Ghost:
+    type = int
     buff: int
     base_size: float
     logical_position: Vector2
@@ -80,27 +81,42 @@ class Ghost(pygame.sprite.Sprite):
     velocity: Vector2
     hp: int
     _distance: float
-
-    def __init__(self, position: Vector2, distance: float = 1.0, buff: int = 0):
+    def __init__(self, position: Vector2, distance: float = 1.0, buff: int = 0, type: int = 0):
+        super().__init__()
         self.hp = 10
         self.buff = buff
         self.logical_position = position
-        # o sprite azul e verde estavam trocados, então destroquei eles
-        if buff == 0:
-            self.hp = 10
-            self.base_image = pygame.image.load(
-                "assets/Ghost_Normal/Normal_Red.png"
-            ).convert_alpha()
-        elif buff == 1:
-            self.hp = 15
-            self.base_image = pygame.image.load(
-                "assets/Ghost_Normal/Normal_Green.png"
-            ).convert_alpha()
-        elif buff == 2:
-            self.hp = 20
-            self.base_image = pygame.image.load(
-                "assets/Ghost_Normal/Normal_Blue.png"
-            ).convert_alpha()
+        
+        if type == 0: #Normal
+            if buff == 0:
+                self.hp = 10
+                self.base_image = pygame.image.load("assets/Ghost_Normal/Normal_Red.png").convert_alpha()
+            elif buff == 1:
+                self.hp = 15
+                self.base_image = pygame.image.load("assets/Ghost_Normal/Normal_Blue.png").convert_alpha()
+            elif buff == 2:
+                self.hp = 20
+                self.base_image = pygame.image.load("assets/Ghost_Normal/Normal_Green.png").convert_alpha()
+        if type == 1: #Goat
+            if buff == 0:
+                self.hp = 10
+                self.base_image = pygame.image.load("assets/Ghost_Goat/Goat_Red.png").convert_alpha()
+            elif buff == 1:
+                self.hp = 15
+                self.base_image = pygame.image.load("assets/Ghost_Goat/Goat_Blue.png").convert_alpha()
+            elif buff == 2:
+                self.hp = 20
+                self.base_image = pygame.image.load("assets/Ghost_Goat/Goat_Green.png").convert_alpha()
+        if type == 2: #Eye
+            if buff == 0:
+                self.hp = 10
+                self.base_image = pygame.image.load("assets/Ghost_Eye/Eye_Red.png").convert_alpha()
+            elif buff == 1:
+                self.hp = 15
+                self.base_image = pygame.image.load("assets/Ghost_Eye/Eye_Blue.png").convert_alpha()
+            elif buff == 2:
+                self.hp = 20
+                self.base_image = pygame.image.load("assets/Ghost_Eye/Eye_Green.png").convert_alpha()
 
         size = GHOST_BASE_SIZE / (distance**2)
         self.hitbox = pygame.Rect(
@@ -231,6 +247,10 @@ class Game:
         self.last_ghost = 0
         pygame.init()
         pygame.mixer.init()
+
+        self.points_green = 0
+        self.points_blue = 0
+        self.points_red = 0
         self.screen = pygame.display.set_mode((800, 600))
         self.hp = 3
         self.invulnerabilidade_timer = 1.0
@@ -258,6 +278,7 @@ class Game:
         self.sons["bgm"].play()
 
         self.ghosts = []
+        # diminui a quantidade de fantasmas para ficar mais vísivel
         for _ in range(3):
             self.ghosts.append(
                 Ghost(
@@ -267,6 +288,7 @@ class Game:
                     ),
                     distance=1.5,
                     buff=random.randint(0, 2),
+                    type=random.randint(0,2)
                 )
             )
         # diminui a quantidade de fantasmas para ficar mais vísivel
@@ -391,7 +413,6 @@ class Game:
                         )
                     elif ghost.buff == 2:
                         self.points_blue += 1
-
             self.ghosts = new_ghosts
 
             self.clicked = False

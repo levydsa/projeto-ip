@@ -181,14 +181,12 @@ class Particula(pygame.sprite.Sprite):
         self.color = "white"
         self.image.fill(self.color)
 
-        self.dir_x = random.randint(-3, 3)
-        self.dir_y = random.randint(-3, 3)
+        while True:
+            self.dir_x = random.randint(-2, 2)
+            self.dir_y = random.randint(-2, 2)
 
-        if abs(self.dir_x) < 1 and abs(self.dir_y) < 1:
-            if random.choice([True, False]):
-                self.dir_x = random.choice([-3, 3])
-            else:
-                self.dir_y = random.choice([-3, 3])
+            if self.dir_x != 0 or self.dir_y != 0:
+                break
 
     def update(self):
         self.rect.x += self.dir_x

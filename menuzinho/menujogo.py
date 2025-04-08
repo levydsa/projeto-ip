@@ -2,48 +2,67 @@ import pygame
 from pygame.locals import *
 from sys import exit
 
+import subprocess
+
 pygame.init()
 pygame.display.set_caption('menu')
-tamanhotela = (960,540)
-telaprincipal = pygame.display.set_mode(tamanhotela) 
-fonte = pygame.font.Font('menuzinho/fonts/alagard.ttf', 25)
+tamanhoscreen = (960,540)
+screenprincipal = pygame.display.set_mode(tamanhoscreen) 
+fonte = pygame.font.Font('menuzinho/fonts/alagard.ttf', 20)
 
-botãoimagem = pygame.image.load('menuzinho/imagens/botoes.png')
+buttonplay = pygame.image.load('menuzinho/imagens/jogarbotao.png')
+buttonexit = pygame.image.load('menuzinho/imagens/sairbotao.png')
 
-def printartext(texto, fonfon, cor, tela, posição):
-    textprint = fonfon.render(texto, True, cor)
-    tela.blit(textprint, posição)
+def printext(text, fonfon, color, screen, position):
+    textprint = fonfon.render(text, True, color)
+    screen.blit(textprint, position)
 
-def printarimagem(repositorio, escala, tela, posição):
-    imagem = pygame.image.load(repositorio)
-    imagem = pygame.transform.scale(imagem, escala)
-    tela.blit(imagem, posição)
+def printimage(folder, scale, screen, position):
+    image = pygame.image.load(folder)
+    image = pygame.transform.scale(image, scale)
+    screen.blit(image, position)
 
-class botão():
-    def __init__(self, x, y, imagem, texto, ajustetexto=(0,0)):
-        self.image = imagem
+class button():
+    def __init__(self, x, y, image, scale):
+        self.altura = image.get_height()
+        self.compri = image.get_width()
+        self.image = pygame.transform.scale(image, (int(self.compri * scale), int(self.altura * scale)))
         self.rect = self.image.get_rect()
         self.rect.topleft = (x, y)
-        self.text = texto
-        self.ajuste = (x + ajustetexto[0], y + ajustetexto[1])
+        self.clicou = False
 
-    def draw(self):#bots botao na tela
-        printarimagem('menuzinho/imagens/botoes.png', (275, 114), telaprincipal, self.ajuste)
-        printartext(self.text, fonte, 'white', telaprincipal, self.ajuste)
+
+    def draw(self):#bots botao na screen
+        action = False
+        mouse = pygame.mouse.get_pos()
+        if self.rect.collidepoint(mouse):
+            #o 0 é button esquerdo domouse
+            if pygame.mouse.get_pressed()[0] == 1 and self.clicou == False:
+                self.clicou = True
+                action = True
+        if pygame.mouse.get_pressed()[0] == 0:
+            self.clicou = False
+        screenprincipal.blit(self.image, (self.rect.x, self.rect.y))
+        return action 
         
 
 def menu_principal():
-    botaplay = botão(200, 250, botãoimagem, 'fui gongada')
-    botaexit = botão(200, 300, botãoimagem, 'sair')
-    botacredits = botão(200, 350, botãoimagem, 'créditos')
+    botaplay = button(160, 210, buttonplay, 0.65)
+    botaexit = button(160, 310, buttonexit, 0.65)
     while True:
-        telaprincipal.fill('black')
-        printarimagem('menuzinho/imagens/fundomenu.png', tamanhotela, telaprincipal, (0,0))
-        printarimagem('menuzinho/imagens/detalhecantos.png', tamanhotela, telaprincipal, (0,0))
-        printarimagem('menuzinho/imagens/título provisório.png', (512, 161), telaprincipal, (-10,25))
-        botaplay.draw()
-        botaexit.draw()
-        botacredits.draw()
+        screenprincipal.fill('black')
+        printimage('menuzinho/imagens/fundomenu.png', tamanhoscreen, screenprincipal, (0,0))
+        printimage('menuzinho/imagens/detalhecantos.png', tamanhoscreen, screenprincipal, (0,0))
+        printimage('menuzinho/imagens/título provisório.png', (512, 161), screenprincipal, (10,35))
+        if botaplay.draw():
+            print('iniciar jogo')
+            pygame.quit() 
+            subprocess.run(["python", "main.py"])  
+            exit()
+            #tenho que puxar main.py e executar aqui
+        if botaexit.draw():
+            pygame.quit()
+            exit()
 
         for evento in pygame.event.get():
             if evento.type == QUIT:

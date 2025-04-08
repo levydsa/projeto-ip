@@ -250,7 +250,8 @@ class Game:
         self.font = pygame.font.SysFont("sans", 14)
 
     def exibe_pontos(self, msg, tamanho, cor):
-        font = pygame.font.SysFont('comicsanssms', tamanho, True, False)
+        # jéssica: mudei a fonte para ficar algo mais pixel 
+        font = pygame.font.Font('menuzinho/fonts/alagard.ttf', 20)
         mensagem = f'{msg}'
         texto_formatado = font.render(mensagem, True, cor)
         return texto_formatado

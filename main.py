@@ -2,8 +2,11 @@ import pygame
 import random
 from typing import List, Tuple
 
-PLAYER_RADIUS = 50
 
+#crio 2 variáveis globais, uma que acompanha a ultima vez que o jogador clicou, e outra que guarda o "cooldown" do clique
+last_click = 0 #variavel que acompanha o ultimo clique
+delay = 700 #delay da camera em milisegundos
+PLAYER_RADIUS = 50
 FRAME_ACTIVE_COLOR = pygame.Color("red")
 FRAME_DEFAULT_COLOR = pygame.Color(100, 100, 100)
 FRAME_THICKNESS = 5
@@ -20,12 +23,14 @@ class Vector2(pygame.Vector2):
 
 class FlashEffect:
     alpha: int
-
     def __init__(self):
+
         self.alpha = 0
 
     def trigger(self) -> None:
-        self.alpha = 255
+        #o clique so é considerado se o ultimo clique+delay for menor que o tempo atual
+        if last_click:
+            self.alpha = 255
 
     def update(self, dt: float) -> None:
         if self.alpha > 0:
@@ -74,7 +79,7 @@ class Ghost(pygame.sprite.Sprite):
         self.hp = 10
         self.buff = buff
         self.logical_position = position
-
+        #o sprite azul e verde estavam trocados, então destroquei eles
         if buff == 0:
             self.hp = 10
             self.base_image = pygame.image.load(
@@ -256,12 +261,16 @@ class Game:
         return texto_formatado
 
     def handle_events(self) -> None:
+        global last_click
+        global delay
         for event in pygame.event.get():
             match event.type:
                 case pygame.QUIT:
                     self.running = False
                 case pygame.MOUSEBUTTONDOWN:
-                    if event.button == pygame.BUTTON_LEFT:
+                    #o evento de clicar so é considerado ser o ultimo clique + delay for menor que o tempo atual
+                    if event.button == pygame.BUTTON_LEFT and last_click + delay < pygame.time.get_ticks(): 
+                        last_click = pygame.time.get_ticks()  #atualizo o tempo do ultimo clique
                         self.clicked = True
                         self.flash.trigger()
 
@@ -293,12 +302,13 @@ class Game:
                 else:
                     for _ in range(5):
                         Particula(ghost.hitbox.topleft, self.particulas)
-                        if ghost.buff == 0:
-                            self.points_red += 1
-                        elif ghost.buff == 1:
-                            self.points_green += 1  # fiz que os pontos so atualizem se o bicho morrer
-                        elif ghost.buff == 2:
-                            self.points_blue += 1
+                    #tirei esses ifs do for da particula para contar os pontos corretamente
+                    if ghost.buff == 0:
+                        self.points_red += 1
+                    elif ghost.buff == 1:
+                        self.points_green += 1  # fiz que os pontos so atualizem se o bicho morrer
+                    elif ghost.buff == 2:
+                        self.points_blue += 1
             self.ghosts = new_ghosts
 
             self.clicked = False

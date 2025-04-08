@@ -82,11 +82,11 @@ class Ghost(pygame.sprite.Sprite):
         elif buff == 1:
             self.hp = 15
             self.base_image = pygame.image.load(
-                "assets/Ghost_Normal/Normal_Blue.png").convert_alpha()
+                "assets/Ghost_Normal/Normal_Green.png").convert_alpha()
         elif buff == 2:
             self.hp = 20
             self.base_image = pygame.image.load(
-                "assets/Ghost_Normal/Normal_Green.png").convert_alpha()
+                "assets/Ghost_Normal/Normal_Blue.png").convert_alpha()
 
         size = GHOST_BASE_SIZE / (distance**2)
         self.hitbox = pygame.Rect(

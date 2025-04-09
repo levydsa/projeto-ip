@@ -4,7 +4,6 @@ from typing import List, Tuple
 from pygame.locals import *
 from sys import exit
 
-
 #crio 2 variáveis globais, uma que acompanha a ultima vez que o jogador clicou, e outra que guarda o "cooldown" do clique
 last_click = 0 #variavel que acompanha o ultimo clique
 delay = 700 #delay da camera em milisegundos
@@ -91,12 +90,12 @@ class Ghost(pygame.sprite.Sprite):
             self.hp = 15
             self.base_image = pygame.image.load(
 
-                "assets/Ghost_Normal/Normal_Blue.png"
+                "assets/Ghost_Normal/Normal_Green.png"
             ).convert_alpha()
         elif buff == 2:
             self.hp = 20
             self.base_image = pygame.image.load(
-                "assets/Ghost_Normal/Normal_Green.png"
+                "assets/Ghost_Normal/Normal_Blue.png"
             ).convert_alpha()
 
         size = GHOST_BASE_SIZE / (distance**2)
@@ -221,8 +220,9 @@ class Game:
     points_red: int
     points_blue: int
     particulas: pygame.sprite.Group
-
+    last_ghost: int
     def __init__(self):
+        self.last_ghost = 0
         pygame.init()
         pygame.mixer.init()
         self.sons = {
@@ -246,18 +246,19 @@ class Game:
         self.particulas = pygame.sprite.Group()
 
         self.ghosts = []
-        # diminui a quantidade de fantasmas para ficar mais vísivel
-        for _ in range(50):
+        for _ in range(3):
             self.ghosts.append(
                 Ghost(
                     position=Vector2(
                         random.uniform(0, self.screen.get_width()),
-                        random.uniform(0, self.screen.get_height()),
+                            (self.screen.get_height()/2)-80,
                     ),
-                    distance=random.uniform(1.0, 3.0),
+                    distance= 1.5,
                     buff=random.randint(0, 2),
                 )
             )
+        # diminui a quantidade de fantasmas para ficar mais vísivel
+
 
         self.ghosts.sort(
             key=lambda ghost: ghost.distance,
@@ -274,7 +275,20 @@ class Game:
         mensagem = f"{msg}"
         texto_formatado = font.render(mensagem, True, cor)
         return texto_formatado
-
+    def add_ghost(self, last_ghost):
+        if last_ghost + 5000 < pygame.time.get_ticks():
+            self.last_ghost = pygame.time.get_ticks()
+            for _ in range(3):
+                self.ghosts.append(
+                    Ghost(
+                        position=Vector2(
+                            random.uniform(0, self.screen.get_width()),
+                             (self.screen.get_height()/2)-80,
+                        ),
+                        distance= 1.5,
+                        buff=random.randint(0, 2),
+                    )
+                )
     def handle_events(self) -> None:
         global last_click
         global delay
@@ -384,6 +398,8 @@ Player: ({self.player.position.x:.2f}, {self.player.position.y:.2f})
             self.handle_events()
             self.update(dt)
             self.draw()
+            self.add_ghost(self.last_ghost)
+
 
         pygame.quit()
 

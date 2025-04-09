@@ -1,6 +1,8 @@
 import pygame
 import random
 from typing import List, Tuple
+from pygame.locals import *
+from sys import exit
 
 PLAYER_RADIUS = 50
 
@@ -78,15 +80,18 @@ class Ghost(pygame.sprite.Sprite):
         if buff == 0:
             self.hp = 10
             self.base_image = pygame.image.load(
-                "assets/Ghost_Normal/Normal_Red.png").convert_alpha()
+                "assets/Ghost_Normal/Normal_Red.png"
+            ).convert_alpha()
         elif buff == 1:
             self.hp = 15
             self.base_image = pygame.image.load(
-                "assets/Ghost_Normal/Normal_Blue.png").convert_alpha()
+                "assets/Ghost_Normal/Normal_Blue.png"
+            ).convert_alpha()
         elif buff == 2:
             self.hp = 20
             self.base_image = pygame.image.load(
-                "assets/Ghost_Normal/Normal_Green.png").convert_alpha()
+                "assets/Ghost_Normal/Normal_Green.png"
+            ).convert_alpha()
 
         size = GHOST_BASE_SIZE / (distance**2)
         self.hitbox = pygame.Rect(
@@ -134,8 +139,10 @@ class Ghost(pygame.sprite.Sprite):
         scale_factor = size / max(self.base_image.get_size())
         self.image = pygame.transform.scale(
             self.base_image,
-            (int(self.base_image.get_width() * scale_factor),
-             int(self.base_image.get_height() * scale_factor))
+            (
+                int(self.base_image.get_width() * scale_factor),
+                int(self.base_image.get_height() * scale_factor),
+            ),
         )
         self.rect = self.image.get_rect(center=self.logical_position)
         screen.blit(self.image, self.hitbox.topleft)
@@ -256,8 +263,9 @@ class Game:
         self.font = pygame.font.SysFont("sans", 14)
 
     def exibe_pontos(self, msg, tamanho, cor):
-        font = pygame.font.SysFont('comicsanssms', tamanho, True, False)
-        mensagem = f'{msg}'
+        # jéssica: mudei a fonte para ficar algo mais pixel
+        font = pygame.font.Font("menuzinho/fonts/alagard.ttf", 20)
+        mensagem = f"{msg}"
         texto_formatado = font.render(mensagem, True, cor)
         return texto_formatado
 
@@ -294,7 +302,9 @@ class Game:
 
             for ghost in self.ghosts:
                 if self.frame.rect.contains(ghost.hitbox):
-                    ghost.hp -= 5  # mudei o dano para os bichos morrerem entre 2/4 cliques
+                    ghost.hp -= (
+                        5  # mudei o dano para os bichos morrerem entre 2/4 cliques
+                    )
                 if ghost.hp > 0:
                     new_ghosts.append(ghost)
                 else:
@@ -304,7 +314,9 @@ class Game:
                         if ghost.buff == 0:
                             self.points_red += 1
                         elif ghost.buff == 1:
-                            self.points_green += 1  # fiz que os pontos so atualizem se o bicho morrer
+                            self.points_green += (
+                                1  # fiz que os pontos so atualizem se o bicho morrer
+                            )
                         elif ghost.buff == 2:
                             self.points_blue += 1
             self.ghosts = new_ghosts
@@ -335,13 +347,10 @@ class Game:
 
         # uma variavel para o os pontos de cada um
 
-        texto_pontos_green = self.exibe_pontos(
-            self.points_green, 40, (0, 255, 0))
-        texto_pontos_blue = self.exibe_pontos(
-            self.points_blue, 40, (0, 0, 255))
+        texto_pontos_green = self.exibe_pontos(self.points_green, 40, (0, 255, 0))
+        texto_pontos_blue = self.exibe_pontos(self.points_blue, 40, (0, 0, 255))
         texto_pontos_red = self.exibe_pontos(self.points_red, 40, (255, 0, 0))
-        self.screen.blit(texto_pontos_green,
-                         (self.screen.get_width() - 100, 10))
+        self.screen.blit(texto_pontos_green, (self.screen.get_width() - 100, 10))
         self.screen.blit(texto_pontos_blue, (self.screen.get_width() - 65, 10))
         self.screen.blit(texto_pontos_red, (self.screen.get_width() - 30, 10))
 
@@ -368,6 +377,86 @@ Player: ({self.player.position.x:.2f}, {self.player.position.y:.2f})
         pygame.quit()
 
 
+# adicionando o menu
+
+#criando display do menu
+pygame.init()
+pygame.display.set_caption("menu")
+tamanhoscreen = (960, 540)
+screenprincipal = pygame.display.set_mode(tamanhoscreen)
+fonte = pygame.font.Font("menuzinho/fonts/alagard.ttf", 20)
+
+buttonplay = pygame.image.load("menuzinho/imagens/jogarbotao.png")
+buttonexit = pygame.image.load("menuzinho/imagens/sairbotao.png")
+
+#função para deixar o print de imagens mais organizado
+def printimage(folder, scale, screen, position):
+    image = pygame.image.load(folder)
+    image = pygame.transform.scale(image, scale)
+    screen.blit(image, position)
+
+#criando a estrutura do botão
+class button:
+    def __init__(self, x, y, image, scale):
+        self.altura = image.get_height()
+        self.compri = image.get_width()
+        self.image = pygame.transform.scale(
+            image, (int(self.compri * scale), int(self.altura * scale))
+        )
+        self.rect = self.image.get_rect()
+        self.rect.topleft = (x, y)
+        self.clicou = False
+
+    def draw(self):  # colocar botão na tela
+        action = False
+        mouse = pygame.mouse.get_pos() #tracking do mouse. se passar por cima da área do botão e clicar, irá entrar no if
+        if self.rect.collidepoint(mouse):
+            # o 0 é button esquerdo do mouse
+            if pygame.mouse.get_pressed()[0] == 1 and self.clicou is False:
+                self.clicou = True
+                action = True
+        if pygame.mouse.get_pressed()[0] == 0:
+            self.clicou = False
+        screenprincipal.blit(self.image, (self.rect.x, self.rect.y))
+        return action
+
+
+def menu_principal():
+    botaplay = button(160, 210, buttonplay, 0.65)
+    botaexit = button(160, 310, buttonexit, 0.65)
+    while True:
+        screenprincipal.fill("black")
+        printimage(
+            "menuzinho/imagens/fundomenu.png", tamanhoscreen, screenprincipal, (0, 0)
+        )
+        printimage(
+            "menuzinho/imagens/detalhecantos.png",
+            tamanhoscreen,
+            screenprincipal,
+            (0, 0),
+        )
+        printimage(
+            "menuzinho/imagens/título provisório.png",
+            (512, 161),
+            screenprincipal,
+            (10, 35),
+        )
+        if botaplay.draw():
+            pygame.quit()
+            game = Game()
+            game.run()
+            exit()
+        if botaexit.draw():
+            pygame.quit()
+            exit()
+
+        for evento in pygame.event.get():
+            if evento.type == QUIT:
+                pygame.quit()
+                exit()
+        pygame.display.update()
+
+# aqui termina o menu
+
 if __name__ == "__main__":
-    game = Game()
-    game.run()
+    menu_principal()

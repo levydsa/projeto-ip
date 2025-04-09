@@ -1,6 +1,8 @@
 import pygame
 import random
 from typing import List, Tuple
+from pygame.locals import *
+from sys import exit
 
 
 #crio 2 variáveis globais, uma que acompanha a ultima vez que o jogador clicou, e outra que guarda o "cooldown" do clique
@@ -83,15 +85,19 @@ class Ghost(pygame.sprite.Sprite):
         if buff == 0:
             self.hp = 10
             self.base_image = pygame.image.load(
-                "assets/Ghost_Normal/Normal_Red.png").convert_alpha()
+                "assets/Ghost_Normal/Normal_Red.png"
+            ).convert_alpha()
         elif buff == 1:
             self.hp = 15
             self.base_image = pygame.image.load(
-                "assets/Ghost_Normal/Normal_Green.png").convert_alpha()
+
+                "assets/Ghost_Normal/Normal_Blue.png"
+            ).convert_alpha()
         elif buff == 2:
             self.hp = 20
             self.base_image = pygame.image.load(
-                "assets/Ghost_Normal/Normal_Blue.png").convert_alpha()
+                "assets/Ghost_Normal/Normal_Green.png"
+            ).convert_alpha()
 
         size = GHOST_BASE_SIZE / (distance**2)
         self.hitbox = pygame.Rect(
@@ -139,8 +145,10 @@ class Ghost(pygame.sprite.Sprite):
         scale_factor = size / max(self.base_image.get_size())
         self.image = pygame.transform.scale(
             self.base_image,
-            (int(self.base_image.get_width() * scale_factor),
-             int(self.base_image.get_height() * scale_factor))
+            (
+                int(self.base_image.get_width() * scale_factor),
+                int(self.base_image.get_height() * scale_factor),
+            ),
         )
         self.rect = self.image.get_rect(center=self.logical_position)
         screen.blit(self.image, self.hitbox.topleft)
@@ -186,14 +194,12 @@ class Particula(pygame.sprite.Sprite):
         self.color = "white"
         self.image.fill(self.color)
 
-        self.dir_x = random.randint(-3, 3)
-        self.dir_y = random.randint(-3, 3)
+        while True:
+            self.dir_x = random.randint(-2, 2)
+            self.dir_y = random.randint(-2, 2)
 
-        if abs(self.dir_x) < 1 and abs(self.dir_y) < 1:
-            if random.choice([True, False]):
-                self.dir_x = random.choice([-3, 3])
-            else:
-                self.dir_y = random.choice([-3, 3])
+            if self.dir_x != 0 or self.dir_y != 0:
+                break
 
     def update(self):
         self.rect.x += self.dir_x
@@ -209,7 +215,7 @@ class Game:
     flash: FlashEffect
     running: bool
     clicked: bool
-    font: pygame.font.Font
+    font: pygame.font.Font  
     # criei 1 variavel para cada tipo de fantasma
     points_green: int
     points_red: int
@@ -218,6 +224,14 @@ class Game:
 
     def __init__(self):
         pygame.init()
+        pygame.mixer.init()
+        self.sons = {
+            'menu': pygame.mixer.Sound('sons/menu.mp3'), #provavelmente devia estar no outro arquivo
+            'flash' : pygame.mixer.Sound('sons/flash.wav'),
+            'estatua_morre' : pygame.mixer.Sound('sons/morteestatua.wav')
+        }
+        for sound in self.sons.values():
+            sound.set_volume(0.1)
 
         self.points_green = 0
         self.points_blue = 0
@@ -255,8 +269,9 @@ class Game:
         self.font = pygame.font.SysFont("sans", 14)
 
     def exibe_pontos(self, msg, tamanho, cor):
-        font = pygame.font.SysFont('comicsanssms', tamanho, True, False)
-        mensagem = f'{msg}'
+        # jéssica: mudei a fonte para ficar algo mais pixel
+        font = pygame.font.Font("menuzinho/fonts/alagard.ttf", 20)
+        mensagem = f"{msg}"
         texto_formatado = font.render(mensagem, True, cor)
         return texto_formatado
 
@@ -272,6 +287,7 @@ class Game:
                     if event.button == pygame.BUTTON_LEFT and last_click + delay < pygame.time.get_ticks(): 
                         last_click = pygame.time.get_ticks()  #atualizo o tempo do ultimo clique
                         self.clicked = True
+                        self.sons['flash'].play()
                         self.flash.trigger()
 
     def update(self, dt: float) -> None:
@@ -296,12 +312,16 @@ class Game:
 
             for ghost in self.ghosts:
                 if self.frame.rect.contains(ghost.hitbox):
-                    ghost.hp -= 5  # mudei o dano para os bichos morrerem entre 2/4 cliques
+                    ghost.hp -= (
+                        5  # mudei o dano para os bichos morrerem entre 2/4 cliques
+                    )
                 if ghost.hp > 0:
                     new_ghosts.append(ghost)
                 else:
+                    self.sons['estatua_morre'].play() #por enquanto todo fantasma vai ter o mesmo som ja q so tem um sprite
                     for _ in range(5):
                         Particula(ghost.hitbox.topleft, self.particulas)
+                        
                     #tirei esses ifs do for da particula para contar os pontos corretamente
                     if ghost.buff == 0:
                         self.points_red += 1
@@ -309,6 +329,7 @@ class Game:
                         self.points_green += 1  # fiz que os pontos so atualizem se o bicho morrer
                     elif ghost.buff == 2:
                         self.points_blue += 1
+
             self.ghosts = new_ghosts
 
             self.clicked = False
@@ -337,13 +358,10 @@ class Game:
 
         # uma variavel para o os pontos de cada um
 
-        texto_pontos_green = self.exibe_pontos(
-            self.points_green, 40, (0, 255, 0))
-        texto_pontos_blue = self.exibe_pontos(
-            self.points_blue, 40, (0, 0, 255))
+        texto_pontos_green = self.exibe_pontos(self.points_green, 40, (0, 255, 0))
+        texto_pontos_blue = self.exibe_pontos(self.points_blue, 40, (0, 0, 255))
         texto_pontos_red = self.exibe_pontos(self.points_red, 40, (255, 0, 0))
-        self.screen.blit(texto_pontos_green,
-                         (self.screen.get_width() - 100, 10))
+        self.screen.blit(texto_pontos_green, (self.screen.get_width() - 100, 10))
         self.screen.blit(texto_pontos_blue, (self.screen.get_width() - 65, 10))
         self.screen.blit(texto_pontos_red, (self.screen.get_width() - 30, 10))
 
@@ -370,6 +388,86 @@ Player: ({self.player.position.x:.2f}, {self.player.position.y:.2f})
         pygame.quit()
 
 
+# adicionando o menu
+
+#criando display do menu
+pygame.init()
+pygame.display.set_caption("menu")
+tamanhoscreen = (960, 540)
+screenprincipal = pygame.display.set_mode(tamanhoscreen)
+fonte = pygame.font.Font("menuzinho/fonts/alagard.ttf", 20)
+
+buttonplay = pygame.image.load("menuzinho/imagens/jogarbotao.png")
+buttonexit = pygame.image.load("menuzinho/imagens/sairbotao.png")
+
+#função para deixar o print de imagens mais organizado
+def printimage(folder, scale, screen, position):
+    image = pygame.image.load(folder)
+    image = pygame.transform.scale(image, scale)
+    screen.blit(image, position)
+
+#criando a estrutura do botão
+class button:
+    def __init__(self, x, y, image, scale):
+        self.altura = image.get_height()
+        self.compri = image.get_width()
+        self.image = pygame.transform.scale(
+            image, (int(self.compri * scale), int(self.altura * scale))
+        )
+        self.rect = self.image.get_rect()
+        self.rect.topleft = (x, y)
+        self.clicou = False
+
+    def draw(self):  # colocar botão na tela
+        action = False
+        mouse = pygame.mouse.get_pos() #tracking do mouse. se passar por cima da área do botão e clicar, irá entrar no if
+        if self.rect.collidepoint(mouse):
+            # o 0 é button esquerdo do mouse
+            if pygame.mouse.get_pressed()[0] == 1 and self.clicou is False:
+                self.clicou = True
+                action = True
+        if pygame.mouse.get_pressed()[0] == 0:
+            self.clicou = False
+        screenprincipal.blit(self.image, (self.rect.x, self.rect.y))
+        return action
+
+
+def menu_principal():
+    botaplay = button(160, 210, buttonplay, 0.65)
+    botaexit = button(160, 310, buttonexit, 0.65)
+    while True:
+        screenprincipal.fill("black")
+        printimage(
+            "menuzinho/imagens/fundomenu.png", tamanhoscreen, screenprincipal, (0, 0)
+        )
+        printimage(
+            "menuzinho/imagens/detalhecantos.png",
+            tamanhoscreen,
+            screenprincipal,
+            (0, 0),
+        )
+        printimage(
+            "menuzinho/imagens/título provisório.png",
+            (512, 161),
+            screenprincipal,
+            (10, 35),
+        )
+        if botaplay.draw():
+            pygame.quit()
+            game = Game()
+            game.run()
+            exit()
+        if botaexit.draw():
+            pygame.quit()
+            exit()
+
+        for evento in pygame.event.get():
+            if evento.type == QUIT:
+                pygame.quit()
+                exit()
+        pygame.display.update()
+
+# aqui termina o menu
+
 if __name__ == "__main__":
-    game = Game()
-    game.run()
+    menu_principal()

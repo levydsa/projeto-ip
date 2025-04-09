@@ -53,11 +53,36 @@ class Player:
         self.position = position.copy()
         self.color = color
 
-    def update(self, offset: Vector2) -> None:
+        self.image_right = pygame.image.load(
+            "assets/Player/Player_Turned_to_Right.png"
+        ).convert_alpha()
+        self.image_center = pygame.image.load(
+            "assets/Player/Player_Center.png"
+        ).convert_alpha()
+        self.image_left = pygame.image.load(
+            "assets/Player/Player_Turned_to_Left.png"
+        ).convert_alpha()
+
+        self.current_image = self.image_center
+        self.rect = self.current_image.get_rect(center=self.position)
+
+        self.screen_width = pygame.display.get_surface().get_width()
+        self.left_region = self.screen_width / 3
+        self.right_region = 2 * self.screen_width / 3
+
+    def update(self, offset: Vector2, frame_center_x: float) -> None:
         self.position = self.logical_position + offset
+        self.rect.center = self.position
+
+        if frame_center_x < self.left_region:
+            self.current_image = self.image_left
+        elif frame_center_x > self.right_region:
+            self.current_image = self.image_right
+        else:
+            self.current_image = self.image_center
 
     def draw(self, screen: pygame.Surface) -> None:
-        pygame.draw.circle(screen, self.color, self.position, PLAYER_RADIUS)
+        screen.blit(self.current_image, self.rect)
 
 
 class Ghost:
@@ -70,43 +95,63 @@ class Ghost:
     velocity: Vector2
     hp: int
     _distance: float
-    
-    def __init__(self, position: Vector2, distance: float = 1.0, buff: int = 0, type: int = 0):
+
+    def __init__(
+        self, position: Vector2, distance: float = 1.0, buff: int = 0, type: int = 0
+    ):
         super().__init__()
         self.hp = 10
         self.buff = buff
         self.logical_position = position
-        
-        if type == 0: #Normal
+
+        if type == 0:  # Normal
             if buff == 0:
                 self.hp = 10
-                self.base_image = pygame.image.load("assets/Ghost_Normal/Normal_Red.png").convert_alpha()
+                self.base_image = pygame.image.load(
+                    "assets/Ghost_Normal/Normal_Red.png"
+                ).convert_alpha()
             elif buff == 1:
                 self.hp = 15
-                self.base_image = pygame.image.load("assets/Ghost_Normal/Normal_Blue.png").convert_alpha()
+                self.base_image = pygame.image.load(
+                    "assets/Ghost_Normal/Normal_Blue.png"
+                ).convert_alpha()
             elif buff == 2:
                 self.hp = 20
-                self.base_image = pygame.image.load("assets/Ghost_Normal/Normal_Green.png").convert_alpha()
-        if type == 1: #Goat
+                self.base_image = pygame.image.load(
+                    "assets/Ghost_Normal/Normal_Green.png"
+                ).convert_alpha()
+        if type == 1:  # Goat
             if buff == 0:
                 self.hp = 10
-                self.base_image = pygame.image.load("assets/Ghost_Goat/Goat_Red.png").convert_alpha()
+                self.base_image = pygame.image.load(
+                    "assets/Ghost_Goat/Goat_Red.png"
+                ).convert_alpha()
             elif buff == 1:
                 self.hp = 15
-                self.base_image = pygame.image.load("assets/Ghost_Goat/Goat_Blue.png").convert_alpha()
+                self.base_image = pygame.image.load(
+                    "assets/Ghost_Goat/Goat_Blue.png"
+                ).convert_alpha()
             elif buff == 2:
                 self.hp = 20
-                self.base_image = pygame.image.load("assets/Ghost_Goat/Goat_Green.png").convert_alpha()
-        if type == 2: #Eye
+                self.base_image = pygame.image.load(
+                    "assets/Ghost_Goat/Goat_Green.png"
+                ).convert_alpha()
+        if type == 2:  # Eye
             if buff == 0:
                 self.hp = 10
-                self.base_image = pygame.image.load("assets/Ghost_Eye/Eye_Red.png").convert_alpha()
+                self.base_image = pygame.image.load(
+                    "assets/Ghost_Eye/Eye_Red.png"
+                ).convert_alpha()
             elif buff == 1:
                 self.hp = 15
-                self.base_image = pygame.image.load("assets/Ghost_Eye/Eye_Blue.png").convert_alpha()
+                self.base_image = pygame.image.load(
+                    "assets/Ghost_Eye/Eye_Blue.png"
+                ).convert_alpha()
             elif buff == 2:
                 self.hp = 20
-                self.base_image = pygame.image.load("assets/Ghost_Eye/Eye_Green.png").convert_alpha()
+                self.base_image = pygame.image.load(
+                    "assets/Ghost_Eye/Eye_Green.png"
+                ).convert_alpha()
 
         size = GHOST_BASE_SIZE / (distance**2)
         self.hitbox = pygame.Rect(
@@ -154,11 +199,14 @@ class Ghost:
         scale_factor = size / max(self.base_image.get_size())
         self.image = pygame.transform.scale(
             self.base_image,
-            (int(self.base_image.get_width() * scale_factor),
-             int(self.base_image.get_height() * scale_factor))
+            (
+                int(self.base_image.get_width() * scale_factor),
+                int(self.base_image.get_height() * scale_factor),
+            ),
         )
         self.rect = self.image.get_rect(center=self.logical_position)
         screen.blit(self.image, self.hitbox.topleft)
+
 
 class Frame:
     rect: pygame.Rect
@@ -256,7 +304,7 @@ class Game:
                     ),
                     distance=random.uniform(1.0, 3.0),
                     buff=random.randint(0, 2),
-                    type=random.randint(0,2)
+                    type=random.randint(0, 2),
                 )
             )
 
@@ -270,8 +318,8 @@ class Game:
         self.font = pygame.font.SysFont("sans", 14)
 
     def exibe_pontos(self, msg, tamanho, cor):
-        font = pygame.font.SysFont('comicsanssms', tamanho, True, False)
-        mensagem = f'{msg}'
+        font = pygame.font.SysFont("comicsanssms", tamanho, True, False)
+        mensagem = f"{msg}"
         texto_formatado = font.render(mensagem, True, cor)
         return texto_formatado
 
@@ -295,7 +343,7 @@ class Game:
             PLAYER_PARALLAX_FACTOR,
         )
 
-        self.player.update(offset)
+        self.player.update(offset, self.frame.rect.centerx)
 
         frame_has_target = any(
             self.frame.rect.contains(ghost.hitbox) for ghost in self.ghosts
@@ -307,7 +355,9 @@ class Game:
 
             for ghost in self.ghosts:
                 if self.frame.rect.contains(ghost.hitbox):
-                    ghost.hp -= 5  # mudei o dano para os bichos morrerem entre 2/4 cliques
+                    ghost.hp -= (
+                        5  # mudei o dano para os bichos morrerem entre 2/4 cliques
+                    )
                 if ghost.hp > 0:
                     new_ghosts.append(ghost)
                 else:
@@ -316,7 +366,9 @@ class Game:
                         if ghost.buff == 0:
                             self.points_red += 1
                         elif ghost.buff == 1:
-                            self.points_green += 1  # fiz que os pontos so atualizem se o bicho morrer
+                            self.points_green += (
+                                1  # fiz que os pontos so atualizem se o bicho morrer
+                            )
                         elif ghost.buff == 2:
                             self.points_blue += 1
             self.ghosts = new_ghosts
@@ -347,13 +399,10 @@ class Game:
 
         # uma variavel para o os pontos de cada um
 
-        texto_pontos_green = self.exibe_pontos(
-            self.points_green, 40, (0, 255, 0))
-        texto_pontos_blue = self.exibe_pontos(
-            self.points_blue, 40, (0, 0, 255))
+        texto_pontos_green = self.exibe_pontos(self.points_green, 40, (0, 255, 0))
+        texto_pontos_blue = self.exibe_pontos(self.points_blue, 40, (0, 0, 255))
         texto_pontos_red = self.exibe_pontos(self.points_red, 40, (255, 0, 0))
-        self.screen.blit(texto_pontos_green,
-                         (self.screen.get_width() - 100, 10))
+        self.screen.blit(texto_pontos_green, (self.screen.get_width() - 100, 10))
         self.screen.blit(texto_pontos_blue, (self.screen.get_width() - 65, 10))
         self.screen.blit(texto_pontos_red, (self.screen.get_width() - 30, 10))
 

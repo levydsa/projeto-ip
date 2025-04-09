@@ -226,7 +226,7 @@ class Game:
         pygame.init()
         pygame.mixer.init()
         self.sons = {
-            'menu': pygame.mixer.Sound('sons/menu.mp3'), #provavelmente devia estar no outro arquivo
+            'bgm': pygame.mixer.Sound('sons/bgm.wav'), 
             'flash' : pygame.mixer.Sound('sons/flash.wav'),
             'estatua_morre' : pygame.mixer.Sound('sons/morteestatua.wav')
         }
@@ -244,6 +244,8 @@ class Game:
         self.frame = Frame(300, 200)
         self.player = Player(Vector2(400, 550), pygame.Color("blue"))
         self.particulas = pygame.sprite.Group()
+        
+        self.sons['bgm'].play()
 
         self.ghosts = []
         # diminui a quantidade de fantasmas para ficar mais vísivel
@@ -392,6 +394,7 @@ Player: ({self.player.position.x:.2f}, {self.player.position.y:.2f})
 
 #criando display do menu
 pygame.init()
+pygame.mixer.init()
 pygame.display.set_caption("menu")
 tamanhoscreen = (960, 540)
 screenprincipal = pygame.display.set_mode(tamanhoscreen)
@@ -433,6 +436,8 @@ class button:
 
 
 def menu_principal():
+    musica = pygame.mixer.Sound('sons/menu.mp3').play()
+    musica.set_volume(0.2)
     botaplay = button(160, 210, buttonplay, 0.65)
     botaexit = button(160, 310, buttonexit, 0.65)
     while True:

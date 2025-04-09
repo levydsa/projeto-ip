@@ -109,7 +109,12 @@ class Ghost:
     _distance: float
 
     def __init__(
-        self, position: Vector2, distance: float = 1.0, buff: int = 0, type: int = 0
+        self,
+        position: Vector2,
+        distance: float = 1.0,
+        buff: int = 0,
+        type: int = 0,
+        player_position: Vector2 = None,
     ):
         super().__init__()
         self.hp = 10
@@ -171,12 +176,16 @@ class Ghost:
             Vector2(size),
         )
 
-        self.velocity = Vector2(
-            random.uniform(-30, 30),
-            random.uniform(-18, 18),
-        )
+        self.velocity = Vector2(0, 0)  # inicia com velocidade zero
+        self.base_speed = random.uniform(20, 40)  # velocidade aleatoria
+        self.current_speed = self.base_speed
+
+        self.is_hit = False
+        self.hit_cooldown = 0
+        self.hit_cooldown_max = 1  # tempo que fica parado ao levar dano (em segundos)
 
         self.distance = distance
+        self.player_position = player_position
 
     @property
     def parallax_factor(self) -> float:
@@ -192,14 +201,44 @@ class Ghost:
         size = GHOST_BASE_SIZE / (self._distance**2)
         self.hitbox.size = Vector2(size)
 
+    def take_damage(self, amount: int):
+        self.hp -= amount
+        self.is_hit = True
+        self.hit_cooldown = self.hit_cooldown_max
+        self.current_speed = self.base_speed * 0.1
+
     def update(
         self,
         dt: float,
         offset: Vector2,
     ) -> None:
-        self.distance -= 0.01 * dt
+        if self.is_hit:
+            self.hit_cooldown -= dt
+            if self.hit_cooldown <= 0:
+                self.is_hit = False
+                self.hit_cooldown = 0
+
+        self.distance -= 0.005 * dt
         if self.distance < 1:
             self.distance = 1
+
+        if self.player_position and not self.is_hit:
+            if self.player_position:
+                direction = self.player_position - self.logical_position
+                if direction.length() > 0:
+                    direction = direction.normalize()
+
+            speed_multiplier = (
+                2 - self.distance
+            ) * 0.5  # vai acelerando quando se aproxima da personagem
+            self.current_speed = self.base_speed * speed_multiplier
+
+            if self.is_hit:
+                self.current_speed *= 0.2
+
+            self.velocity = direction * self.current_speed
+        else:
+            self.velocity = Vector2(0, 0)
 
         self.logical_position += self.velocity * dt
         self.hitbox.topleft = self.logical_position + offset * self.parallax_factor
@@ -336,6 +375,7 @@ class Game:
                     distance=1.5,
                     buff=random.randint(0, 2),
                     type=random.randint(0, 2),
+                    player_position=self.player.position,
                 )
             )
         # diminui a quantidade de fantasmas para ficar mais vísivel
@@ -421,6 +461,9 @@ class Game:
         mouse_pos = pygame.mouse.get_pos()
         self.frame.update(mouse_pos)
 
+        for ghost in self.ghosts:
+            ghost.player_position = self.player.position
+
         PLAYER_PARALLAX_FACTOR = Vector2(0.4, 0.2)
         offset = self.frame.calculate_parallax_offset(
             self.screen.get_rect(),
@@ -439,9 +482,7 @@ class Game:
 
             for ghost in self.ghosts:
                 if self.frame.rect.contains(ghost.hitbox):
-                    ghost.hp -= (
-                        5  # mudei o dano para os bichos morrerem entre 2/4 cliques
-                    )
+                    ghost.take_damage(5)
                 if ghost.hp > 0:
                     new_ghosts.append(ghost)
                 else:
@@ -463,6 +504,7 @@ class Game:
             self.ghosts = new_ghosts
 
             self.clicked = False
+
         self.particulas.update()
 
         for ghost in self.ghosts:

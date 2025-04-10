@@ -325,7 +325,10 @@ class Game:
                         self.points_blue = 0
                         self.points_green = 0
                         self.points_red = 0
-                    break
+                        gameover(self.screen)
+                        self.running = False  # Add this to stop the game loop
+                        return  # Add this to exit update immediately
+                    
 
         mouse_pos = pygame.mouse.get_pos()
         self.frame.update(mouse_pos)
@@ -440,8 +443,6 @@ Player: ({self.player.position.x:.2f}, {self.player.position.y:.2f})
 pygame.init()
 pygame.mixer.init()
 pygame.display.set_caption("menu")
-tamanhoscreen = (960, 540)
-screenprincipal = pygame.display.set_mode(tamanhoscreen)
 fonte = pygame.font.Font("menuzinho/fonts/alagard.ttf", 20)
 
 buttonplay = pygame.image.load("menuzinho/imagens/jogarbotao.png")
@@ -456,7 +457,7 @@ def printimage(folder, scale, screen, position):
 
 # criando a estrutura do botão
 class button:
-    def __init__(self, x, y, image, scale):
+    def __init__(self, x, y, image, scale, screen):
         self.altura = image.get_height()
         self.compri = image.get_width()
         self.image = pygame.transform.scale(
@@ -465,6 +466,7 @@ class button:
         self.rect = self.image.get_rect()
         self.rect.topleft = (x, y)
         self.clicou = False
+        self.screeen = screen
 
     def draw(self):  # colocar botão na tela
         action = False
@@ -477,15 +479,17 @@ class button:
                 action = True
         if pygame.mouse.get_pressed()[0] == 0:
             self.clicou = False
-        screenprincipal.blit(self.image, (self.rect.x, self.rect.y))
+        self.screeen.blit(self.image, (self.rect.x, self.rect.y))
         return action
 
 
 def menu_principal():
+    tamanhoscreen = (960, 540)
+    screenprincipal = pygame.display.set_mode(tamanhoscreen) #o menu está em outra proporção
     musica = pygame.mixer.Sound("sons/menu.mp3").play()
     musica.set_volume(0.2)
-    botaplay = button(160, 210, buttonplay, 0.65)
-    botaexit = button(160, 310, buttonexit, 0.65)
+    botaplay = button(160, 210, buttonplay, 0.65, screenprincipal)
+    botaexit = button(160, 310, buttonexit, 0.65, screenprincipal)
     while True:
         screenprincipal.fill("black")
         printimage(
@@ -505,10 +509,9 @@ def menu_principal():
             (10, 35),
         )
         if botaplay.draw():
-            pygame.quit()
+            pygame.mixer.stop()
             game = Game()
             game.run()
-            exit()
         if botaexit.draw():
             pygame.quit()
             exit()
@@ -522,6 +525,27 @@ def menu_principal():
 
 # aqui termina o menu
 
+
+# início do game over
+buttonmenu = pygame.image.load("menuzinho/imagens/botãomenu.png")
+gameover_image = pygame.image.load("menuzinho/imagens/gameover.png")
+
+def gameover(screen):
+    runnning = True
+    while runnning:
+        screen.fill("black")
+        printimage("menuzinho/imagens/gameover.png", (512, 384), screen, (120,40))
+        botamenu = button(290, 350, buttonmenu, 0.65, screen)
+        if botamenu.draw():
+            pygame.mixer.stop() #parar música
+            menu_principal() #iniciar menu principal
+        for evento in pygame.event.get():
+            if evento.type == QUIT:
+                pygame.quit()
+                exit()
+        pygame.display.update()
+
+# fim do game over
 
 if __name__ == "__main__":
     menu_principal()

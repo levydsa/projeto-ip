@@ -25,7 +25,7 @@ class Vector2(pygame.Vector2):
 
 class FlashEffect:
     alpha: int
-
+      
     def __init__(self):
         self.alpha = 0
 
@@ -59,6 +59,10 @@ class Player:
         self.logical_position = position.copy()
         self.position = position.copy()
         self.color = color
+
+    @property
+    def hitbox(self) -> pygame.Rect:
+        return pygame.Rect(self.position.x - PLAYER_RADIUS, self.position.y - PLAYER_RADIUS, PLAYER_RADIUS * 2, PLAYER_RADIUS * 2)
 
     def update(self, offset: Vector2) -> None:
         self.position = self.logical_position + offset
@@ -219,12 +223,18 @@ class Game:
     points_green: int
     points_red: int
     points_blue: int
+    hp: int
     particulas: pygame.sprite.Group
 
     def __init__(self):
         pygame.init()
         pygame.mixer.init()
+        self.screen = pygame.display.set_mode((800, 600))
+        self.hp = 3
+        self.invulnerabilidade_timer = 1.0
         self.sons = {
+            # provavelmente devia estar no outro arquivo
+            'menu': pygame.mixer.Sound('sons/menu.mp3'),
             "bgm": pygame.mixer.Sound("sons/bgm.wav"),
             "flash": pygame.mixer.Sound("sons/flash.wav"),
             "estatua_morre": pygame.mixer.Sound("sons/morteestatua.wav"),
@@ -235,7 +245,6 @@ class Game:
         self.points_green = 0
         self.points_blue = 0
         self.points_red = 0
-        self.screen = pygame.display.set_mode((800, 600))
         pygame.display.set_caption("Projeto IP")
 
         self.clock = pygame.time.Clock()
@@ -276,6 +285,12 @@ class Game:
         texto_formatado = font.render(mensagem, True, cor)
         return texto_formatado
 
+    def exibe_hp(self, vida, tam, cor):
+        font = pygame.font.Font("menuzinho/fonts/alagard.ttf", 20)
+        vidas = f'{vida}'
+        hp_formatado = font.render(vidas, True, cor)
+        return hp_formatado
+
     def handle_events(self) -> None:
         global last_click
         global delay
@@ -285,6 +300,7 @@ class Game:
                     self.running = False
                 case pygame.MOUSEBUTTONDOWN:
                     # o evento de clicar so é considerado ser o ultimo clique + delay for menor que o tempo atual
+
                     if (
                         event.button == pygame.BUTTON_LEFT
                         and last_click + delay < pygame.time.get_ticks()
@@ -297,6 +313,20 @@ class Game:
                         self.flash.trigger()
 
     def update(self, dt: float) -> None:
+        if self.invulnerabilidade_timer > 0:
+            self.invulnerabilidade_timer -= dt
+
+        if self.invulnerabilidade_timer <= 0:
+            for ghost in self.ghosts:
+                if ghost.hitbox.colliderect(self.player.hitbox) and self.hp > 0:
+                    self.hp -= 1
+                    self.invulnerabilidade_timer = 1.0
+                    if self.hp <= 0:
+                        self.points_blue = 0
+                        self.points_green = 0
+                        self.points_red = 0
+                    break
+
         mouse_pos = pygame.mouse.get_pos()
         self.frame.update(mouse_pos)
 
@@ -328,7 +358,7 @@ class Game:
                         "estatua_morre"
                     ].play()  # por enquanto todo fantasma vai ter o mesmo som ja q so tem um sprite
                     for _ in range(5):
-                        Particula(ghost.hitbox.topleft, self.particulas)
+                        Particula(ghost.hitbox.center, self.particulas)
 
                     # tirei esses ifs do for da particula para contar os pontos corretamente
                     if ghost.buff == 0:
@@ -368,12 +398,18 @@ class Game:
 
         # uma variavel para o os pontos de cada um
 
-        texto_pontos_green = self.exibe_pontos(self.points_green, 40, (0, 255, 0))
-        texto_pontos_blue = self.exibe_pontos(self.points_blue, 40, (0, 0, 255))
+        texto_pontos_green = self.exibe_pontos(
+            self.points_green, 40, (0, 255, 0))
+        texto_pontos_blue = self.exibe_pontos(
+            self.points_blue, 40, (0, 0, 255))
         texto_pontos_red = self.exibe_pontos(self.points_red, 40, (255, 0, 0))
-        self.screen.blit(texto_pontos_green, (self.screen.get_width() - 100, 10))
+        self.screen.blit(texto_pontos_green,
+                         (self.screen.get_width() - 100, 10))
         self.screen.blit(texto_pontos_blue, (self.screen.get_width() - 65, 10))
         self.screen.blit(texto_pontos_red, (self.screen.get_width() - 30, 10))
+
+        texto_hp = self.exibe_hp(self.hp, 40, (255, 0, 0))
+        self.screen.blit(texto_hp, (30, 30))
 
         text = self.font.render(
             f"""
@@ -418,7 +454,6 @@ def printimage(folder, scale, screen, position):
     image = pygame.transform.scale(image, scale)
     screen.blit(image, position)
 
-
 # criando a estrutura do botão
 class button:
     def __init__(self, x, y, image, scale):
@@ -434,6 +469,7 @@ class button:
     def draw(self):  # colocar botão na tela
         action = False
         mouse = pygame.mouse.get_pos()  # tracking do mouse. se passar por cima da área do botão e clicar, irá entrar no if
+
         if self.rect.collidepoint(mouse):
             # o 0 é button esquerdo do mouse
             if pygame.mouse.get_pressed()[0] == 1 and self.clicou is False:
@@ -453,7 +489,8 @@ def menu_principal():
     while True:
         screenprincipal.fill("black")
         printimage(
-            "menuzinho/imagens/fundomenu.png", tamanhoscreen, screenprincipal, (0, 0)
+            "menuzinho/imagens/fundomenu.png", tamanhoscreen, screenprincipal, (
+                0, 0)
         )
         printimage(
             "menuzinho/imagens/detalhecantos.png",
@@ -484,6 +521,7 @@ def menu_principal():
 
 
 # aqui termina o menu
+
 
 if __name__ == "__main__":
     menu_principal()

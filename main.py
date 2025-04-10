@@ -64,14 +64,41 @@ class Player:
     def hitbox(self) -> pygame.Rect:
         return pygame.Rect(self.position.x - PLAYER_RADIUS, self.position.y - PLAYER_RADIUS, PLAYER_RADIUS * 2, PLAYER_RADIUS * 2)
 
-    def update(self, offset: Vector2) -> None:
+    def update(self, offset: Vector2, frame_center_x: int) -> None:
+        self.image_right = pygame.image.load(
+            "assets/Player/Player_Turned_to_Right.png"
+        ).convert_alpha()
+        self.image_center = pygame.image.load(
+            "assets/Player/Player_Center.png"
+        ).convert_alpha()
+        self.image_left = pygame.image.load(
+            "assets/Player/Player_Turned_to_Left.png"
+        ).convert_alpha()
+
+        self.current_image = self.image_center
+        self.rect = self.current_image.get_rect(center=self.position)
+
+        self.screen_width = pygame.display.get_surface().get_width()
+        self.left_region = self.screen_width / 3
+        self.right_region = 2 * self.screen_width / 3
+
+
         self.position = self.logical_position + offset
+        self.rect.center = self.position
+
+        if frame_center_x < self.left_region:
+            self.current_image = self.image_left
+        elif frame_center_x > self.right_region:
+            self.current_image = self.image_right
+        else:
+            self.current_image = self.image_center
 
     def draw(self, screen: pygame.Surface) -> None:
-        pygame.draw.circle(screen, self.color, self.position, PLAYER_RADIUS)
+        screen.blit(self.current_image, self.rect)
 
 
-class Ghost(pygame.sprite.Sprite):
+class Ghost:
+    type = int
     buff: int
     base_size: float
     logical_position: Vector2
@@ -81,26 +108,67 @@ class Ghost(pygame.sprite.Sprite):
     hp: int
     _distance: float
 
-    def __init__(self, position: Vector2, distance: float = 1.0, buff: int = 0):
+    def __init__(
+        self,
+        position: Vector2,
+        distance: float = 1.0,
+        buff: int = 0,
+        type: int = 0,
+        player_position: Vector2 = None,
+    ):
+        super().__init__()
         self.hp = 10
         self.buff = buff
         self.logical_position = position
-        # o sprite azul e verde estavam trocados, então destroquei eles
-        if buff == 0:
-            self.hp = 10
-            self.base_image = pygame.image.load(
-                "assets/Ghost_Normal/Normal_Red.png"
-            ).convert_alpha()
-        elif buff == 1:
-            self.hp = 15
-            self.base_image = pygame.image.load(
-                "assets/Ghost_Normal/Normal_Green.png"
-            ).convert_alpha()
-        elif buff == 2:
-            self.hp = 20
-            self.base_image = pygame.image.load(
-                "assets/Ghost_Normal/Normal_Blue.png"
-            ).convert_alpha()
+
+        if type == 0:  # Normal
+            if buff == 0:
+                self.hp = 10
+                self.base_image = pygame.image.load(
+                    "assets/Ghost_Normal/Normal_Red.png"
+                ).convert_alpha()
+            elif buff == 1:
+                self.hp = 15
+                self.base_image = pygame.image.load(
+                    "assets/Ghost_Normal/Normal_Blue.png"
+                ).convert_alpha()
+            elif buff == 2:
+                self.hp = 20
+                self.base_image = pygame.image.load(
+                    "assets/Ghost_Normal/Normal_Green.png"
+                ).convert_alpha()
+        if type == 1:  # Goat
+            if buff == 0:
+                self.hp = 10
+                self.base_image = pygame.image.load(
+                    "assets/Ghost_Goat/Goat_Red.png"
+                ).convert_alpha()
+            elif buff == 1:
+                self.hp = 15
+                self.base_image = pygame.image.load(
+                    "assets/Ghost_Goat/Goat_Blue.png"
+                ).convert_alpha()
+            elif buff == 2:
+                self.hp = 20
+                self.base_image = pygame.image.load(
+                    "assets/Ghost_Goat/Goat_Green.png"
+                ).convert_alpha()
+        if type == 2:  # Eye
+            if buff == 0:
+                self.hp = 10
+                self.base_image = pygame.image.load(
+                    "assets/Ghost_Eye/Eye_Red.png"
+                ).convert_alpha()
+            elif buff == 1:
+                self.hp = 15
+                self.base_image = pygame.image.load(
+                    "assets/Ghost_Eye/Eye_Blue.png"
+                ).convert_alpha()
+            elif buff == 2:
+                self.hp = 20
+                self.base_image = pygame.image.load(
+                    "assets/Ghost_Eye/Eye_Green.png"
+                ).convert_alpha()
 
         size = GHOST_BASE_SIZE / (distance**2)
         self.hitbox = pygame.Rect(
@@ -108,12 +176,16 @@ class Ghost(pygame.sprite.Sprite):
             Vector2(size),
         )
 
-        self.velocity = Vector2(
-            random.uniform(-30, 30),
-            random.uniform(-18, 18),
-        )
+        self.velocity = Vector2(0, 0)  # inicia com velocidade zero
+        self.base_speed = random.uniform(20, 40)  # velocidade aleatoria
+        self.current_speed = self.base_speed
+
+        self.is_hit = False
+        self.hit_cooldown = 0
+        self.hit_cooldown_max = 1  # tempo que fica parado ao levar dano (em segundos)
 
         self.distance = distance
+        self.player_position = player_position
 
     @property
     def parallax_factor(self) -> float:
@@ -129,14 +201,44 @@ class Ghost(pygame.sprite.Sprite):
         size = GHOST_BASE_SIZE / (self._distance**2)
         self.hitbox.size = Vector2(size)
 
+    def take_damage(self, amount: int):
+        self.hp -= amount
+        self.is_hit = True
+        self.hit_cooldown = self.hit_cooldown_max
+        self.current_speed = self.base_speed * 0.1
+
     def update(
         self,
         dt: float,
         offset: Vector2,
     ) -> None:
-        self.distance -= 0.01 * dt
+        if self.is_hit:
+            self.hit_cooldown -= dt
+            if self.hit_cooldown <= 0:
+                self.is_hit = False
+                self.hit_cooldown = 0
+
+        self.distance -= 0.005 * dt
         if self.distance < 1:
             self.distance = 1
+
+        if self.player_position and not self.is_hit:
+            if self.player_position:
+                direction = self.player_position - self.logical_position
+                if direction.length() > 0:
+                    direction = direction.normalize()
+
+            speed_multiplier = (
+                2 - self.distance
+            ) * 0.5  # vai acelerando quando se aproxima da personagem
+            self.current_speed = self.base_speed * speed_multiplier
+
+            if self.is_hit:
+                self.current_speed *= 0.2
+
+            self.velocity = direction * self.current_speed
+        else:
+            self.velocity = Vector2(0, 0)
 
         self.logical_position += self.velocity * dt
         self.hitbox.topleft = self.logical_position + offset * self.parallax_factor
@@ -231,6 +333,10 @@ class Game:
         self.last_ghost = 0
         pygame.init()
         pygame.mixer.init()
+
+        self.points_green = 0
+        self.points_blue = 0
+        self.points_red = 0
         self.screen = pygame.display.set_mode((800, 600))
         self.hp = 3
         self.invulnerabilidade_timer = 1.0
@@ -258,6 +364,7 @@ class Game:
         self.sons["bgm"].play()
 
         self.ghosts = []
+        # diminui a quantidade de fantasmas para ficar mais vísivel
         for _ in range(3):
             self.ghosts.append(
                 Ghost(
@@ -267,6 +374,8 @@ class Game:
                     ),
                     distance=1.5,
                     buff=random.randint(0, 2),
+                    type=random.randint(0, 2),
+                    player_position=self.player.position,
                 )
             )
         # diminui a quantidade de fantasmas para ficar mais vísivel
@@ -352,13 +461,16 @@ class Game:
         mouse_pos = pygame.mouse.get_pos()
         self.frame.update(mouse_pos)
 
+        for ghost in self.ghosts:
+            ghost.player_position = self.player.position
+
         PLAYER_PARALLAX_FACTOR = Vector2(0.4, 0.2)
         offset = self.frame.calculate_parallax_offset(
             self.screen.get_rect(),
             PLAYER_PARALLAX_FACTOR,
         )
 
-        self.player.update(offset)
+        self.player.update(offset, self.frame.rect.centerx)
 
         frame_has_target = any(
             self.frame.rect.contains(ghost.hitbox) for ghost in self.ghosts
@@ -370,9 +482,7 @@ class Game:
 
             for ghost in self.ghosts:
                 if self.frame.rect.contains(ghost.hitbox):
-                    ghost.hp -= (
-                        5  # mudei o dano para os bichos morrerem entre 2/4 cliques
-                    )
+                    ghost.take_damage(5)
                 if ghost.hp > 0:
                     new_ghosts.append(ghost)
                 else:
@@ -391,10 +501,10 @@ class Game:
                         )
                     elif ghost.buff == 2:
                         self.points_blue += 1
-
             self.ghosts = new_ghosts
 
             self.clicked = False
+
         self.particulas.update()
 
         for ghost in self.ghosts:
@@ -420,28 +530,15 @@ class Game:
 
         # uma variavel para o os pontos de cada um
 
-        texto_pontos_green = self.exibe_pontos(
-            self.points_green, 40, (0, 255, 0))
-        texto_pontos_blue = self.exibe_pontos(
-            self.points_blue, 40, (0, 0, 255))
+        texto_pontos_green = self.exibe_pontos(self.points_green, 40, (0, 255, 0))
+        texto_pontos_blue = self.exibe_pontos(self.points_blue, 40, (0, 0, 255))
         texto_pontos_red = self.exibe_pontos(self.points_red, 40, (255, 0, 0))
-        self.screen.blit(texto_pontos_green,
-                         (self.screen.get_width() - 100, 10))
+        self.screen.blit(texto_pontos_green, (self.screen.get_width() - 100, 10))
         self.screen.blit(texto_pontos_blue, (self.screen.get_width() - 65, 10))
         self.screen.blit(texto_pontos_red, (self.screen.get_width() - 30, 10))
 
         texto_hp = self.exibe_hp(self.hp, 40, (255, 0, 0))
         self.screen.blit(texto_hp, (30, 30))
-
-        text = self.font.render(
-            f"""
-FPS: {int(self.clock.get_fps())}
-Player: ({self.player.position.x:.2f}, {self.player.position.y:.2f})
-            """.strip(),
-            True,
-            (255, 255, 255),
-        )
-        self.screen.blit(text, (10, 10))
 
         pygame.display.flip()
 

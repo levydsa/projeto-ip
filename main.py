@@ -4,6 +4,10 @@ from typing import List, Tuple
 from pygame.locals import *
 from sys import exit
 
+VERMELHO = 0
+VERDE = 1
+AZUL = 2
+
 
 # crio 2 variáveis globais, uma que acompanha a ultima vez que o jogador clicou, e outra que guarda o "cooldown" do clique
 last_click = 0  # variavel que acompanha o ultimo clique
@@ -50,6 +54,9 @@ class Player:
     position: Vector2
     radius: int
     color: pygame.Color
+    shake_duration: float
+    shake_intensity: int
+    shake_offset: Vector2
 
     def __init__(
         self,
@@ -60,11 +67,35 @@ class Player:
         self.position = position.copy()
         self.color = color
 
+        self.shake_duration = 0
+        self.shake_intensity = 8
+        self.shake_offset = Vector2(0, 0)
+
     @property
     def hitbox(self) -> pygame.Rect:
-        return pygame.Rect(self.position.x - PLAYER_RADIUS, self.position.y - PLAYER_RADIUS, PLAYER_RADIUS * 2, PLAYER_RADIUS * 2)
+        return pygame.Rect(
+            self.position.x - PLAYER_RADIUS,
+            self.position.y - PLAYER_RADIUS,
+            PLAYER_RADIUS * 2,
+            PLAYER_RADIUS * 2,
+        )
+
+    def start_shake(self, duration=0.4, intensity=8):
+        self.shake_duration = duration
+        self.shake_intensity = intensity
 
     def update(self, offset: Vector2, frame_center_x: int) -> None:
+        if self.shake_duration > 0:
+            self.shake_duration -= 1 / 60
+            self.shake_offset.x = random.randint(
+                -self.shake_intensity, self.shake_intensity
+            )
+            self.shake_offset.y = random.randint(
+                -self.shake_intensity, self.shake_intensity
+            )
+            if self.shake_duration <= 0:
+                self.shake_offset = Vector2(0, 0)
+
         self.image_right = pygame.image.load(
             "assets/Player/Player_Turned_to_Right.png"
         ).convert_alpha()
@@ -82,8 +113,7 @@ class Player:
         self.left_region = self.screen_width / 3
         self.right_region = 2 * self.screen_width / 3
 
-
-        self.position = self.logical_position + offset
+        self.position = self.logical_position + offset + self.shake_offset
         self.rect.center = self.position
 
         if frame_center_x < self.left_region:
@@ -122,49 +152,49 @@ class Ghost:
         self.logical_position = position
 
         if type == 0:  # Normal
-            if buff == 0:
+            if buff == VERMELHO:
                 self.hp = 10
                 self.base_image = pygame.image.load(
                     "assets/Ghost_Normal/Normal_Red.png"
                 ).convert_alpha()
-            elif buff == 1:
+            elif buff == AZUL:
                 self.hp = 15
                 self.base_image = pygame.image.load(
                     "assets/Ghost_Normal/Normal_Blue.png"
                 ).convert_alpha()
-            elif buff == 2:
+            elif buff == VERDE:
                 self.hp = 20
                 self.base_image = pygame.image.load(
                     "assets/Ghost_Normal/Normal_Green.png"
                 ).convert_alpha()
         if type == 1:  # Goat
-            if buff == 0:
+            if buff == VERMELHO:
                 self.hp = 10
                 self.base_image = pygame.image.load(
                     "assets/Ghost_Goat/Goat_Red.png"
                 ).convert_alpha()
-            elif buff == 1:
+            elif buff == AZUL:
                 self.hp = 15
                 self.base_image = pygame.image.load(
                     "assets/Ghost_Goat/Goat_Blue.png"
                 ).convert_alpha()
-            elif buff == 2:
+            elif buff == VERDE:
                 self.hp = 20
                 self.base_image = pygame.image.load(
                     "assets/Ghost_Goat/Goat_Green.png"
                 ).convert_alpha()
         if type == 2:  # Eye
-            if buff == 0:
+            if buff == VERMELHO:
                 self.hp = 10
                 self.base_image = pygame.image.load(
                     "assets/Ghost_Eye/Eye_Red.png"
                 ).convert_alpha()
-            elif buff == 1:
+            elif buff == AZUL:
                 self.hp = 15
                 self.base_image = pygame.image.load(
                     "assets/Ghost_Eye/Eye_Blue.png"
                 ).convert_alpha()
-            elif buff == 2:
+            elif buff == VERDE:
                 self.hp = 20
                 self.base_image = pygame.image.load(
                     "assets/Ghost_Eye/Eye_Green.png"
@@ -218,11 +248,11 @@ class Ghost:
                 self.is_hit = False
                 self.hit_cooldown = 0
 
-        self.distance -= 0.005 * dt
-        if self.distance < 1:
-            self.distance = 1
-
         if self.player_position and not self.is_hit:
+            self.distance -= 0.05 * dt
+            if self.distance < 1:
+                self.distance = 1.1
+
             if self.player_position:
                 direction = self.player_position - self.logical_position
                 if direction.length() > 0:
@@ -342,7 +372,7 @@ class Game:
         self.invulnerabilidade_timer = 1.0
         self.sons = {
             # provavelmente devia estar no outro arquivo
-            'menu': pygame.mixer.Sound('sons/menu.mp3'),
+            "menu": pygame.mixer.Sound("sons/menu.mp3"),
             "bgm": pygame.mixer.Sound("sons/bgm.wav"),
             "flash": pygame.mixer.Sound("sons/flash.wav"),
             "estatua_morre": pygame.mixer.Sound("sons/morteestatua.wav"),
@@ -396,7 +426,6 @@ class Game:
         texto_formatado = font.render(mensagem, True, cor)
         return texto_formatado
 
-
     def add_ghost(self, last_ghost):
         if last_ghost + 5000 < pygame.time.get_ticks():
             self.last_ghost = pygame.time.get_ticks()
@@ -408,16 +437,19 @@ class Game:
                             (self.screen.get_height() / 2) - 80,
                         ),
                         distance=1.5,
+                        type=random.randint(0, 2),
                         buff=random.randint(0, 2),
                     )
                 )
 
     def exibe_hp(self, vida, tam, cor):
         font = pygame.font.Font("menuzinho/fonts/alagard.ttf", 20)
-        vidas = f'{vida}'
+        vidas = f"{vida}"
         hp_formatado = font.render(vidas, True, cor)
         return hp_formatado
 
+    def is_player_in_frame(self) -> bool:
+        return self.frame.rect.colliderect(self.player.hitbox)
 
     def handle_events(self) -> None:
         global last_click
@@ -449,14 +481,14 @@ class Game:
                 if ghost.hitbox.colliderect(self.player.hitbox) and self.hp > 0:
                     self.hp -= 1
                     self.invulnerabilidade_timer = 1.0
+                    self.player.start_shake()
                     if self.hp <= 0:
                         self.points_blue = 0
                         self.points_green = 0
                         self.points_red = 0
                         gameover(self.screen)
-                        self.running = False  # Add this to stop the game loop
-                        return  # Add this to exit update immediately
-                    
+                        self.running = False
+                        return
 
         mouse_pos = pygame.mouse.get_pos()
         self.frame.update(mouse_pos)
@@ -478,6 +510,22 @@ class Game:
         self.frame.has_target = frame_has_target
 
         if self.clicked:
+            if self.is_player_in_frame():
+                if (
+                    self.points_red > 0
+                    and self.points_blue > 0
+                    and self.points_green > 0
+                ):
+                    self.points_red -= 1
+                    self.points_blue -= 1
+                    self.points_green -= 1
+
+                    self.hp += 1
+                    self.player.start_shake(
+                        duration=0.2, intensity=4
+                    )  # Small shake for healing
+
+            # Process ghost damage
             new_ghosts = []
 
             for ghost in self.ghosts:
@@ -492,15 +540,13 @@ class Game:
                     for _ in range(5):
                         Particula(ghost.hitbox.center, self.particulas)
 
-                    # tirei esses ifs do for da particula para contar os pontos corretamente
-                    if ghost.buff == 0:
+                    if ghost.buff == VERMELHO:
                         self.points_red += 1
-                    elif ghost.buff == 1:
-                        self.points_green += (
-                            1  # fiz que os pontos so atualizem se o bicho morrer
-                        )
-                    elif ghost.buff == 2:
+                    elif ghost.buff == VERDE:
+                        self.points_green += 1
+                    elif ghost.buff == AZUL:
                         self.points_blue += 1
+
             self.ghosts = new_ghosts
 
             self.clicked = False
@@ -572,6 +618,7 @@ def printimage(folder, scale, screen, position):
     image = pygame.transform.scale(image, scale)
     screen.blit(image, position)
 
+
 # criando a estrutura do botão
 class button:
     def __init__(self, x, y, image, scale, screen):
@@ -602,7 +649,9 @@ class button:
 
 def menu_principal():
     tamanhoscreen = (960, 540)
-    screenprincipal = pygame.display.set_mode(tamanhoscreen) #o menu está em outra proporção
+    screenprincipal = pygame.display.set_mode(
+        tamanhoscreen
+    )  # o menu está em outra proporção
     musica = pygame.mixer.Sound("sons/menu.mp3").play()
     musica.set_volume(0.2)
     botaplay = button(160, 210, buttonplay, 0.65, screenprincipal)
@@ -610,8 +659,7 @@ def menu_principal():
     while True:
         screenprincipal.fill("black")
         printimage(
-            "menuzinho/imagens/fundomenu.png", tamanhoscreen, screenprincipal, (
-                0, 0)
+            "menuzinho/imagens/fundomenu.png", tamanhoscreen, screenprincipal, (0, 0)
         )
         printimage(
             "menuzinho/imagens/detalhecantos.png",
@@ -647,20 +695,22 @@ def menu_principal():
 buttonmenu = pygame.image.load("menuzinho/imagens/botãomenu.png")
 gameover_image = pygame.image.load("menuzinho/imagens/gameover.png")
 
+
 def gameover(screen):
     runnning = True
     while runnning:
         screen.fill("black")
-        printimage("menuzinho/imagens/gameover.png", (512, 384), screen, (120,40))
+        printimage("menuzinho/imagens/gameover.png", (512, 384), screen, (120, 40))
         botamenu = button(290, 350, buttonmenu, 0.65, screen)
         if botamenu.draw():
-            pygame.mixer.stop() #parar música
-            menu_principal() #iniciar menu principal
+            pygame.mixer.stop()  # parar música
+            menu_principal()  # iniciar menu principal
         for evento in pygame.event.get():
             if evento.type == QUIT:
                 pygame.quit()
                 exit()
         pygame.display.update()
+
 
 # fim do game over
 

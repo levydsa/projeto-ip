@@ -25,7 +25,7 @@ class Vector2(pygame.Vector2):
 
 class FlashEffect:
     alpha: int
-      
+
     def __init__(self):
         self.alpha = 0
 
@@ -94,12 +94,12 @@ class Ghost(pygame.sprite.Sprite):
         elif buff == 1:
             self.hp = 15
             self.base_image = pygame.image.load(
-                "assets/Ghost_Normal/Normal_Blue.png"
+                "assets/Ghost_Normal/Normal_Green.png"
             ).convert_alpha()
         elif buff == 2:
             self.hp = 20
             self.base_image = pygame.image.load(
-                "assets/Ghost_Normal/Normal_Green.png"
+                "assets/Ghost_Normal/Normal_Blue.png"
             ).convert_alpha()
 
         size = GHOST_BASE_SIZE / (distance**2)
@@ -225,8 +225,10 @@ class Game:
     points_blue: int
     hp: int
     particulas: pygame.sprite.Group
+    last_ghost: int
 
     def __init__(self):
+        self.last_ghost = 0
         pygame.init()
         pygame.mixer.init()
         self.screen = pygame.display.set_mode((800, 600))
@@ -256,18 +258,18 @@ class Game:
         self.sons["bgm"].play()
 
         self.ghosts = []
-        # diminui a quantidade de fantasmas para ficar mais vísivel
-        for _ in range(50):
+        for _ in range(3):
             self.ghosts.append(
                 Ghost(
                     position=Vector2(
                         random.uniform(0, self.screen.get_width()),
-                        random.uniform(0, self.screen.get_height()),
+                        (self.screen.get_height() / 2) - 80,
                     ),
-                    distance=random.uniform(1.0, 3.0),
+                    distance=1.5,
                     buff=random.randint(0, 2),
                 )
             )
+        # diminui a quantidade de fantasmas para ficar mais vísivel
 
         self.ghosts.sort(
             key=lambda ghost: ghost.distance,
@@ -285,11 +287,28 @@ class Game:
         texto_formatado = font.render(mensagem, True, cor)
         return texto_formatado
 
+
+    def add_ghost(self, last_ghost):
+        if last_ghost + 5000 < pygame.time.get_ticks():
+            self.last_ghost = pygame.time.get_ticks()
+            for _ in range(3):
+                self.ghosts.append(
+                    Ghost(
+                        position=Vector2(
+                            random.uniform(0, self.screen.get_width()),
+                            (self.screen.get_height() / 2) - 80,
+                        ),
+                        distance=1.5,
+                        buff=random.randint(0, 2),
+                    )
+                )
+
     def exibe_hp(self, vida, tam, cor):
         font = pygame.font.Font("menuzinho/fonts/alagard.ttf", 20)
         vidas = f'{vida}'
         hp_formatado = font.render(vidas, True, cor)
         return hp_formatado
+
 
     def handle_events(self) -> None:
         global last_click
@@ -433,6 +452,7 @@ Player: ({self.player.position.x:.2f}, {self.player.position.y:.2f})
             self.handle_events()
             self.update(dt)
             self.draw()
+            self.add_ghost(self.last_ghost)
 
         pygame.quit()
 

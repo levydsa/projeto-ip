@@ -737,6 +737,9 @@ gameover_image = pygame.image.load("menuzinho/imagens/gameover.png")
 
 def gameover(screen):
     runnning = True
+    pygame.mixer.stop()
+    musica2 = pygame.mixer.Sound("sons/OMORI OST - 001 Title.wav").play()
+    musica2.set_volume(0.2)
     while runnning:
         screen.fill("black")
         printimage("menuzinho/imagens/gameover.png", (512, 384), screen, (120, 40))

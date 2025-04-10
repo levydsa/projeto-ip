@@ -64,7 +64,7 @@ class Player:
     def hitbox(self) -> pygame.Rect:
         return pygame.Rect(self.position.x - PLAYER_RADIUS, self.position.y - PLAYER_RADIUS, PLAYER_RADIUS * 2, PLAYER_RADIUS * 2)
 
-    def update(self, offset: Vector2) -> None:
+    def update(self, offset: Vector2, frame_center_x: int) -> None:
         self.image_right = pygame.image.load(
             "assets/Player/Player_Turned_to_Right.png"
         ).convert_alpha()
@@ -82,7 +82,7 @@ class Player:
         self.left_region = self.screen_width / 3
         self.right_region = 2 * self.screen_width / 3
 
-    def update(self, offset: Vector2, frame_center_x: float) -> None:
+
         self.position = self.logical_position + offset
         self.rect.center = self.position
 
@@ -539,16 +539,6 @@ class Game:
 
         texto_hp = self.exibe_hp(self.hp, 40, (255, 0, 0))
         self.screen.blit(texto_hp, (30, 30))
-
-        text = self.font.render(
-            f"""
-FPS: {int(self.clock.get_fps())}
-Player: ({self.player.position.x:.2f}, {self.player.position.y:.2f})
-            """.strip(),
-            True,
-            (255, 255, 255),
-        )
-        self.screen.blit(text, (10, 10))
 
         pygame.display.flip()
 

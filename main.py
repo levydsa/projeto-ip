@@ -25,9 +25,8 @@ class Vector2(pygame.Vector2):
 
 class FlashEffect:
     alpha: int
-
+      
     def __init__(self):
-
         self.alpha = 0
 
     def trigger(self) -> None:
@@ -95,7 +94,6 @@ class Ghost(pygame.sprite.Sprite):
         elif buff == 1:
             self.hp = 15
             self.base_image = pygame.image.load(
-
                 "assets/Ghost_Normal/Normal_Blue.png"
             ).convert_alpha()
         elif buff == 2:
@@ -237,8 +235,9 @@ class Game:
         self.sons = {
             # provavelmente devia estar no outro arquivo
             'menu': pygame.mixer.Sound('sons/menu.mp3'),
-            'flash': pygame.mixer.Sound('sons/flash.wav'),
-            'estatua_morre': pygame.mixer.Sound('sons/morteestatua.wav')
+            "bgm": pygame.mixer.Sound("sons/bgm.wav"),
+            "flash": pygame.mixer.Sound("sons/flash.wav"),
+            "estatua_morre": pygame.mixer.Sound("sons/morteestatua.wav"),
         }
         for sound in self.sons.values():
             sound.set_volume(0.1)
@@ -253,6 +252,8 @@ class Game:
         self.frame = Frame(300, 200)
         self.player = Player(Vector2(400, 550), pygame.Color("blue"))
         self.particulas = pygame.sprite.Group()
+
+        self.sons["bgm"].play()
 
         self.ghosts = []
         # diminui a quantidade de fantasmas para ficar mais vísivel
@@ -299,10 +300,16 @@ class Game:
                     self.running = False
                 case pygame.MOUSEBUTTONDOWN:
                     # o evento de clicar so é considerado ser o ultimo clique + delay for menor que o tempo atual
-                    if event.button == pygame.BUTTON_LEFT and last_click + delay < pygame.time.get_ticks():
-                        last_click = pygame.time.get_ticks()  # atualizo o tempo do ultimo clique
+
+                    if (
+                        event.button == pygame.BUTTON_LEFT
+                        and last_click + delay < pygame.time.get_ticks()
+                    ):
+                        last_click = (
+                            pygame.time.get_ticks()
+                        )  # atualizo o tempo do ultimo clique
                         self.clicked = True
-                        self.sons['flash'].play()
+                        self.sons["flash"].play()
                         self.flash.trigger()
 
     def update(self, dt: float) -> None:
@@ -347,8 +354,9 @@ class Game:
                 if ghost.hp > 0:
                     new_ghosts.append(ghost)
                 else:
-                    # por enquanto todo fantasma vai ter o mesmo som ja q so tem um sprite
-                    self.sons['estatua_morre'].play()
+                    self.sons[
+                        "estatua_morre"
+                    ].play()  # por enquanto todo fantasma vai ter o mesmo som ja q so tem um sprite
                     for _ in range(5):
                         Particula(ghost.hitbox.center, self.particulas)
 
@@ -356,7 +364,9 @@ class Game:
                     if ghost.buff == 0:
                         self.points_red += 1
                     elif ghost.buff == 1:
-                        self.points_green += 1  # fiz que os pontos so atualizem se o bicho morrer
+                        self.points_green += (
+                            1  # fiz que os pontos so atualizem se o bicho morrer
+                        )
                     elif ghost.buff == 2:
                         self.points_blue += 1
 
@@ -428,6 +438,7 @@ Player: ({self.player.position.x:.2f}, {self.player.position.y:.2f})
 
 # criando display do menu
 pygame.init()
+pygame.mixer.init()
 pygame.display.set_caption("menu")
 tamanhoscreen = (960, 540)
 screenprincipal = pygame.display.set_mode(tamanhoscreen)
@@ -436,17 +447,14 @@ fonte = pygame.font.Font("menuzinho/fonts/alagard.ttf", 20)
 buttonplay = pygame.image.load("menuzinho/imagens/jogarbotao.png")
 buttonexit = pygame.image.load("menuzinho/imagens/sairbotao.png")
 
+
 # função para deixar o print de imagens mais organizado
-
-
 def printimage(folder, scale, screen, position):
     image = pygame.image.load(folder)
     image = pygame.transform.scale(image, scale)
     screen.blit(image, position)
 
 # criando a estrutura do botão
-
-
 class button:
     def __init__(self, x, y, image, scale):
         self.altura = image.get_height()
@@ -460,8 +468,8 @@ class button:
 
     def draw(self):  # colocar botão na tela
         action = False
-        # tracking do mouse. se passar por cima da área do botão e clicar, irá entrar no if
-        mouse = pygame.mouse.get_pos()
+        mouse = pygame.mouse.get_pos()  # tracking do mouse. se passar por cima da área do botão e clicar, irá entrar no if
+
         if self.rect.collidepoint(mouse):
             # o 0 é button esquerdo do mouse
             if pygame.mouse.get_pressed()[0] == 1 and self.clicou is False:
@@ -474,6 +482,8 @@ class button:
 
 
 def menu_principal():
+    musica = pygame.mixer.Sound("sons/menu.mp3").play()
+    musica.set_volume(0.2)
     botaplay = button(160, 210, buttonplay, 0.65)
     botaexit = button(160, 310, buttonexit, 0.65)
     while True:
@@ -508,6 +518,7 @@ def menu_principal():
                 pygame.quit()
                 exit()
         pygame.display.update()
+
 
 # aqui termina o menu
 

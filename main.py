@@ -600,6 +600,36 @@ class Game:
         pygame.quit()
 
 
+#tela de créditos
+def créditos(screen, tamanho, font):
+    while True:
+        screen.fill("black")
+        printimage(
+            "menuzinho/imagens/fundomenu.png", tamanho, screen, (0, 0)
+        )
+        printimage(
+            "menuzinho/imagens/detalhecantos.png",
+            tamanho,
+            screen,
+            (0, 0),
+        )
+        printartext("Equipe 4", font, "grey", screen, (50,200))
+        printartext("Heiji Hirakawa <hh>", font, "grey", screen, (50,240))
+        printartext("Jessica Macedo <jalm2>", font, "grey", screen, (50,260))
+        printartext("Levy Dorgival <ldsa>", font, "grey", screen, (50,280))
+        printartext("Samira Cikarele <scsms>", font, "grey", screen, (50,300))
+        printartext("Heitor Nascimento <hnd>", font, "grey", screen, (50,320))
+        printartext("Vitor Nascimento <vnb>", font, "grey", screen, (50,340))
+        printartext("> pressione C para voltar ao menu <", font, "grey", screen, (150,500))
+        for evento in pygame.event.get():
+            if evento.type == QUIT:
+                pygame.quit()
+                exit()
+            if evento.type == pygame.KEYDOWN:
+                if evento.key == pygame.K_c:
+                    return
+                
+        pygame.display.update()
 # adicionando o menu
 
 # criando display do menu
@@ -612,12 +642,14 @@ buttonplay = pygame.image.load("menuzinho/imagens/jogarbotao.png")
 buttonexit = pygame.image.load("menuzinho/imagens/sairbotao.png")
 
 
-# função para deixar o print de imagens mais organizado
+# função para deixar o print de imagens e textos mais organizado
 def printimage(folder, scale, screen, position):
     image = pygame.image.load(folder)
     image = pygame.transform.scale(image, scale)
     screen.blit(image, position)
-
+def printartext(texto, fonfon, cor, tela, posição):
+    textprint = fonfon.render(texto, True, cor)
+    tela.blit(textprint, posição)
 
 # criando a estrutura do botão
 class button:
@@ -646,6 +678,8 @@ class button:
         self.screeen.blit(self.image, (self.rect.x, self.rect.y))
         return action
 
+fonte = pygame.font.Font("menuzinho/fonts/alagard.ttf", 15)
+fontemaior = pygame.font.Font("menuzinho/fonts/alagard.ttf", 20)
 
 def menu_principal():
     tamanhoscreen = (960, 540)
@@ -673,6 +707,7 @@ def menu_principal():
             screenprincipal,
             (10, 35),
         )
+        printartext("> pressione C para creditos <", fonte, "grey", screenprincipal, (150,500))
         if botaplay.draw():
             pygame.mixer.stop()
             game = Game()
@@ -685,6 +720,10 @@ def menu_principal():
             if evento.type == QUIT:
                 pygame.quit()
                 exit()
+            if evento.type == pygame.KEYDOWN:
+                if evento.key == pygame.K_c:
+                    créditos(screenprincipal, tamanhoscreen, fontemaior)
+                
         pygame.display.update()
 
 
